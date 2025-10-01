@@ -1,0 +1,20 @@
+# IDE
+*.user
+.idea
+*.cbp
+
+# Cmake
+CMakeFiles/
+cmake-build*
+cmake_install.cmake
+Makefile
+*CMakeCache.txt
+cmake_targets/CMakeFiles/*
+build
+build
+
+# OS
+.DS_Store
+
+# clangd
+.cache
