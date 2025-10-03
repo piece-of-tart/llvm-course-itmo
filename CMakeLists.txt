@@ -20,16 +20,14 @@ FetchContent_MakeAvailable(SFML)
 
 add_executable(game_of_life_llvm 
   src/app.cpp
-  src/FrameCounting.cpp
-  src/Graphics.cpp
-  src/RandomGenerator.cpp
+  src/sim.cpp
 )
 
 target_link_libraries(${MAIN_TARGET} PRIVATE SFML::System SFML::Window SFML::Graphics)
 target_compile_options(${MAIN_TARGET} PRIVATE -Wall -Wextra)
 
-add_custom_target(frame_counting_llvm_ir
-  COMMAND ${CMAKE_CXX_COMPILER} -O3 -S -emit-llvm -o ${CMAKE_BINARY_DIR}/frame_counting.ll ${CMAKE_SOURCE_DIR}/src/FrameCounting.cpp
-  DEPENDS ${CMAKE_SOURCE_DIR}/src/FrameCounting.cpp
+add_custom_target(app_llvm_ir
+  COMMAND ${CMAKE_CXX_COMPILER} -O3 -S -emit-llvm -o ${CMAKE_BINARY_DIR}/app_ir.ll ${CMAKE_SOURCE_DIR}/src/app.cpp
+  DEPENDS ${CMAKE_SOURCE_DIR}/src/app.cpp
   COMMENT "Generating LLVM IR for app.cpp"
 )
