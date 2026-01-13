@@ -11,7 +11,7 @@
       "displayName": "Debug",
       "description": "Configure with debug information and no optimizations",
       "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/debug",
+      "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
       }
@@ -21,7 +21,7 @@
       "displayName": "Release",
       "description": "Configure with optimizations and no debug information",
       "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/release",
+      "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
       }

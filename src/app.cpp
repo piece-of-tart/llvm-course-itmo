@@ -1,42 +1,29 @@
 #include "sim.h"
 
-#include <cstdlib>
-#include <ctime>
+#define WIDTH_IN_PIXEL 1200
+#define HEIGHT_IN_PIXEL 800
+#define RADIUS 10
 
-#define WIDTH_IN_PIXEL   1200
-#define HEIGHT_IN_PIXEL  800
-#define RADIUS           10
-
-#define WIDTH  (WIDTH_IN_PIXEL / RADIUS)
+#define WIDTH (WIDTH_IN_PIXEL / RADIUS)
 #define HEIGHT (HEIGHT_IN_PIXEL / RADIUS)
-
-
-void RandomGenerator_set_seed() {
-  static bool flag = true;
-  if (flag) {
-    srand(time(nullptr));
-  }
-  flag = false;
-}
-
-int RandomGenerator_next_int() {
-  RandomGenerator_set_seed();
-  return rand();
-}
 
 struct GameOfLife {
   bool field[WIDTH * HEIGHT];
 };
 
-void GameOfLifeInit(GameOfLife *game_of_life) {
+static void GameOfLifeInit(GameOfLife *game_of_life) {
+  static int rand = 2463534242u;
   for (int y = 0; y < HEIGHT; y++) {
     for (int x = 0; x < WIDTH; x++) {
-      game_of_life->field[y * WIDTH + x] = RandomGenerator_next_int() % 2 == 0;
+      game_of_life->field[y * WIDTH + x] = rand % 2 == 0;
+      rand ^= rand << 13;
+      rand ^= rand >> 17;
+      rand ^= rand << 5;
     }
   }
 }
 
-int GameOfLifeGetAliveCells(GameOfLife *game_of_life, int x, int y) {
+static int GameOfLifeGetAliveCells(GameOfLife *game_of_life, int x, int y) {
   int cnt = 0;
   for (int x_diff = -1; x_diff < 2; x_diff++) {
     for (int y_diff = -1; y_diff < 2; y_diff++) {
@@ -51,7 +38,7 @@ int GameOfLifeGetAliveCells(GameOfLife *game_of_life, int x, int y) {
   return cnt;
 }
 
-void GameOfLifeNextField(GameOfLife *game_of_life) {
+static void GameOfLifeNextField(GameOfLife *game_of_life) {
   bool new_field[WIDTH * HEIGHT];
   for (int y = 0; y < HEIGHT; y++) {
     for (int x = 0; x < WIDTH; x++) {
@@ -75,7 +62,7 @@ void GameOfLifeNextField(GameOfLife *game_of_life) {
   }
 }
 
-bool GameOfLifeGetCoord(GameOfLife *game_of_life, int x, int y) {
+static bool GameOfLifeGetCoord(GameOfLife *game_of_life, int x, int y) {
   return game_of_life->field[y * WIDTH + x];
 }
 
