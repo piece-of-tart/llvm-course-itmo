@@ -5,177 +5,219 @@ target triple = "x86_64-pc-linux-gnu"
 
 %struct.GameOfLife = type { [9600 x i8] }
 
-@_ZZ24RandomGenerator_set_seedvE4flag = internal unnamed_addr global i1 false, align 1
+@_ZZL14GameOfLifeInitP10GameOfLifeE4rand = internal unnamed_addr global i32 -1831433054, align 4
 
-; Function Attrs: mustprogress nounwind uwtable
-define dso_local void @_Z24RandomGenerator_set_seedv() local_unnamed_addr #0 {
-  %1 = load i1, ptr @_ZZ24RandomGenerator_set_seedvE4flag, align 1
-  br i1 %1, label %5, label %2
+; Function Attrs: mustprogress noreturn uwtable
+define dso_local noundef i32 @_Z3appv() local_unnamed_addr #0 {
+  %1 = alloca [9600 x i8], align 16
+  %2 = alloca %struct.GameOfLife, align 1
+  call void @llvm.lifetime.start.p0(i64 9600, ptr nonnull %2) #7
+  call void @llvm.memset.p0.i64(ptr noundef nonnull align 1 dereferenceable(9600) %2, i8 0, i64 9600, i1 false)
+  %3 = load i32, ptr @_ZZL14GameOfLifeInitP10GameOfLifeE4rand, align 4, !tbaa !5
+  br label %4
 
-2:                                                ; preds = %0
-  %3 = tail call i64 @time(ptr noundef null) #10
-  %4 = trunc i64 %3 to i32
-  tail call void @srand(i32 noundef %4) #10
-  br label %5
+4:                                                ; preds = %8, %0
+  %5 = phi i64 [ 0, %0 ], [ %9, %8 ]
+  %6 = phi i32 [ %3, %0 ], [ %36, %8 ]
+  %7 = mul nuw nsw i64 %5, 120
+  br label %11
 
-5:                                                ; preds = %2, %0
-  store i1 true, ptr @_ZZ24RandomGenerator_set_seedvE4flag, align 1
-  ret void
-}
+8:                                                ; preds = %11
+  %9 = add nuw nsw i64 %5, 1
+  %10 = icmp eq i64 %9, 80
+  br i1 %10, label %39, label %4, !llvm.loop !9
 
-; Function Attrs: nounwind
-declare void @srand(i32 noundef) local_unnamed_addr #1
+11:                                               ; preds = %11, %4
+  %12 = phi i64 [ 0, %4 ], [ %37, %11 ]
+  %13 = phi i32 [ %6, %4 ], [ %36, %11 ]
+  %14 = add nuw nsw i64 %12, %7
+  %15 = getelementptr inbounds nuw [9600 x i8], ptr %2, i64 0, i64 %14
+  %16 = trunc i32 %13 to i8
+  %17 = and i8 %16, 1
+  %18 = xor i8 %17, 1
+  store i8 %18, ptr %15, align 1, !tbaa !11
+  %19 = shl i32 %13, 13
+  %20 = xor i32 %19, %13
+  %21 = ashr i32 %20, 17
+  %22 = xor i32 %21, %20
+  %23 = shl i32 %22, 5
+  %24 = xor i32 %23, %22
+  %25 = or disjoint i64 %12, 1
+  %26 = add nuw nsw i64 %25, %7
+  %27 = getelementptr inbounds nuw [9600 x i8], ptr %2, i64 0, i64 %26
+  %28 = trunc i32 %22 to i8
+  %29 = and i8 %28, 1
+  %30 = xor i8 %29, 1
+  store i8 %30, ptr %27, align 1, !tbaa !11
+  %31 = shl i32 %24, 13
+  %32 = xor i32 %31, %24
+  %33 = ashr i32 %32, 17
+  %34 = xor i32 %33, %32
+  %35 = shl i32 %34, 5
+  %36 = xor i32 %35, %34
+  %37 = add nuw nsw i64 %12, 2
+  %38 = icmp eq i64 %37, 120
+  br i1 %38, label %8, label %11, !llvm.loop !13
 
-; Function Attrs: nounwind
-declare i64 @time(ptr noundef) local_unnamed_addr #1
+39:                                               ; preds = %8
+  store i32 %36, ptr @_ZZL14GameOfLifeInitP10GameOfLifeE4rand, align 4, !tbaa !5
+  call fastcc void @_ZL19GameOfLifeNextFieldP10GameOfLife(ptr noundef %2)
+  br label %40
 
-; Function Attrs: mustprogress nounwind uwtable
-define dso_local noundef i32 @_Z24RandomGenerator_next_intv() local_unnamed_addr #0 {
-  %1 = load i1, ptr @_ZZ24RandomGenerator_set_seedvE4flag, align 1
-  br i1 %1, label %5, label %2
+40:                                               ; preds = %132, %39
+  call void @llvm.lifetime.start.p0(i64 9600, ptr nonnull %1) #7
+  br label %41
 
-2:                                                ; preds = %0
-  %3 = tail call i64 @time(ptr noundef null) #10
-  %4 = trunc i64 %3 to i32
-  tail call void @srand(i32 noundef %4) #10
-  br label %5
+41:                                               ; preds = %54, %40
+  %42 = phi i64 [ 0, %40 ], [ %55, %54 ]
+  %43 = trunc i64 %42 to i32
+  %44 = add i32 %43, 79
+  %45 = urem i32 %44, 80
+  %46 = mul nuw nsw i32 %45, 120
+  %47 = add i32 %43, 80
+  %48 = urem i32 %47, 80
+  %49 = mul nuw nsw i32 %48, 120
+  %50 = add i32 %43, 81
+  %51 = urem i32 %50, 80
+  %52 = mul nuw nsw i32 %51, 120
+  %53 = mul nuw nsw i64 %42, 120
+  br label %57
 
-5:                                                ; preds = %0, %2
-  store i1 true, ptr @_ZZ24RandomGenerator_set_seedvE4flag, align 1
-  %6 = tail call i32 @rand() #10
-  ret i32 %6
-}
+54:                                               ; preds = %125
+  %55 = add nuw nsw i64 %42, 1
+  %56 = icmp eq i64 %55, 80
+  br i1 %56, label %128, label %41, !llvm.loop !14
 
-; Function Attrs: nounwind
-declare i32 @rand() local_unnamed_addr #1
+57:                                               ; preds = %125, %41
+  %58 = phi i64 [ 0, %41 ], [ %126, %125 ]
+  %59 = trunc i64 %58 to i8
+  %60 = add nuw i8 %59, 79
+  %61 = urem i8 %60, 80
+  %62 = zext nneg i8 %61 to i32
+  %63 = add nuw nsw i32 %46, %62
+  %64 = zext nneg i32 %63 to i64
+  %65 = getelementptr inbounds nuw [9600 x i8], ptr %2, i64 0, i64 %64
+  %66 = load i8, ptr %65, align 1, !tbaa !11, !range !15, !noundef !16
+  %67 = add nuw nsw i32 %49, %62
+  %68 = zext nneg i32 %67 to i64
+  %69 = getelementptr inbounds nuw [9600 x i8], ptr %2, i64 0, i64 %68
+  %70 = load i8, ptr %69, align 1, !tbaa !11, !range !15, !noundef !16
+  %71 = add nuw nsw i32 %52, %62
+  %72 = zext nneg i32 %71 to i64
+  %73 = getelementptr inbounds nuw [9600 x i8], ptr %2, i64 0, i64 %72
+  %74 = load i8, ptr %73, align 1, !tbaa !11, !range !15, !noundef !16
+  %75 = add nuw i8 %59, 80
+  %76 = urem i8 %75, 80
+  %77 = zext nneg i8 %76 to i32
+  %78 = add nuw nsw i32 %46, %77
+  %79 = zext nneg i32 %78 to i64
+  %80 = getelementptr inbounds nuw [9600 x i8], ptr %2, i64 0, i64 %79
+  %81 = load i8, ptr %80, align 1, !tbaa !11, !range !15, !noundef !16
+  %82 = add nuw nsw i32 %52, %77
+  %83 = zext nneg i32 %82 to i64
+  %84 = getelementptr inbounds nuw [9600 x i8], ptr %2, i64 0, i64 %83
+  %85 = load i8, ptr %84, align 1, !tbaa !11, !range !15, !noundef !16
+  %86 = add nuw i8 %59, 81
+  %87 = urem i8 %86, 80
+  %88 = zext nneg i8 %87 to i32
+  %89 = add nuw nsw i32 %46, %88
+  %90 = zext nneg i32 %89 to i64
+  %91 = getelementptr inbounds nuw [9600 x i8], ptr %2, i64 0, i64 %90
+  %92 = load i8, ptr %91, align 1, !tbaa !11, !range !15, !noundef !16
+  %93 = add nuw nsw i32 %49, %88
+  %94 = zext nneg i32 %93 to i64
+  %95 = getelementptr inbounds nuw [9600 x i8], ptr %2, i64 0, i64 %94
+  %96 = load i8, ptr %95, align 1, !tbaa !11, !range !15, !noundef !16
+  %97 = add nuw nsw i8 %70, %66
+  %98 = add nuw nsw i8 %97, %74
+  %99 = add nuw nsw i8 %98, %81
+  %100 = add nuw nsw i8 %99, %85
+  %101 = add nuw nsw i8 %100, %92
+  %102 = add nuw nsw i8 %101, %96
+  %103 = zext nneg i8 %102 to i32
+  %104 = add nuw nsw i32 %52, %88
+  %105 = zext nneg i32 %104 to i64
+  %106 = getelementptr inbounds nuw [9600 x i8], ptr %2, i64 0, i64 %105
+  %107 = load i8, ptr %106, align 1, !tbaa !11, !range !15, !noundef !16
+  %108 = zext nneg i8 %107 to i32
+  %109 = add nuw nsw i32 %103, %108
+  %110 = add nuw nsw i64 %58, %53
+  %111 = getelementptr inbounds nuw [9600 x i8], ptr %2, i64 0, i64 %110
+  %112 = load i8, ptr %111, align 1, !tbaa !11, !range !15, !noundef !16
+  %113 = trunc nuw i8 %112 to i1
+  %114 = icmp ne i32 %109, 3
+  %115 = or i1 %114, %113
+  br i1 %115, label %118, label %116
 
-; Function Attrs: mustprogress nounwind uwtable
-define dso_local void @_Z14GameOfLifeInitP10GameOfLife(ptr nocapture noundef writeonly %0) local_unnamed_addr #0 {
-  br label %2
+116:                                              ; preds = %57
+  %117 = getelementptr inbounds nuw [9600 x i8], ptr %1, i64 0, i64 %110
+  store i8 1, ptr %117, align 1, !tbaa !11
+  br label %125
 
-2:                                                ; preds = %1, %6
-  %3 = phi i64 [ 0, %1 ], [ %7, %6 ]
-  %4 = mul nuw nsw i64 %3, 120
-  br label %9
+118:                                              ; preds = %57
+  %119 = add nsw i32 %109, -4
+  %120 = icmp ult i32 %119, -2
+  %121 = and i1 %120, %113
+  %122 = getelementptr inbounds nuw [9600 x i8], ptr %1, i64 0, i64 %110
+  br i1 %121, label %123, label %124
 
-5:                                                ; preds = %6
-  ret void
+123:                                              ; preds = %118
+  store i8 0, ptr %122, align 1, !tbaa !11
+  br label %125
 
-6:                                                ; preds = %15
-  %7 = add nuw nsw i64 %3, 1
-  %8 = icmp eq i64 %7, 80
-  br i1 %8, label %5, label %2, !llvm.loop !5
+124:                                              ; preds = %118
+  store i8 %112, ptr %122, align 1, !tbaa !11
+  br label %125
 
-9:                                                ; preds = %2, %15
-  %10 = phi i64 [ 0, %2 ], [ %22, %15 ]
-  %11 = load i1, ptr @_ZZ24RandomGenerator_set_seedvE4flag, align 1
-  br i1 %11, label %15, label %12
+125:                                              ; preds = %124, %123, %116
+  %126 = add nuw nsw i64 %58, 1
+  %127 = icmp eq i64 %126, 120
+  br i1 %127, label %54, label %57, !llvm.loop !17
 
-12:                                               ; preds = %9
-  %13 = tail call i64 @time(ptr noundef null) #10
-  %14 = trunc i64 %13 to i32
-  tail call void @srand(i32 noundef %14) #10
-  br label %15
+128:                                              ; preds = %54
+  call void @llvm.memcpy.p0.p0.i64(ptr noundef nonnull align 1 dereferenceable(9600) %2, ptr noundef nonnull align 16 dereferenceable(9600) %1, i64 9600, i1 false), !tbaa !11
+  call void @llvm.lifetime.end.p0(i64 9600, ptr nonnull %1) #7
+  br label %129
 
-15:                                               ; preds = %9, %12
-  store i1 true, ptr @_ZZ24RandomGenerator_set_seedvE4flag, align 1
-  %16 = tail call noundef i32 @rand() #10
-  %17 = add nuw nsw i64 %10, %4
-  %18 = getelementptr inbounds nuw [9600 x i8], ptr %0, i64 0, i64 %17
-  %19 = trunc i32 %16 to i8
-  %20 = and i8 %19, 1
-  %21 = xor i8 %20, 1
-  store i8 %21, ptr %18, align 1, !tbaa !7
-  %22 = add nuw nsw i64 %10, 1
-  %23 = icmp eq i64 %22, 120
-  br i1 %23, label %6, label %9, !llvm.loop !11
+129:                                              ; preds = %128, %133
+  %130 = phi i64 [ 0, %128 ], [ %134, %133 ]
+  %131 = trunc nuw nsw i64 %130 to i32
+  br label %136
+
+132:                                              ; preds = %133
+  tail call void @_Z14Graphics_flushv()
+  br label %40, !llvm.loop !18
+
+133:                                              ; preds = %136
+  %134 = add nuw nsw i64 %130, 1
+  %135 = icmp eq i64 %134, 120
+  br i1 %135, label %132, label %129, !llvm.loop !19
+
+136:                                              ; preds = %129, %136
+  %137 = phi i64 [ 0, %129 ], [ %145, %136 ]
+  %138 = mul nuw nsw i64 %137, 120
+  %139 = add nuw nsw i64 %138, %130
+  %140 = getelementptr inbounds nuw [9600 x i8], ptr %2, i64 0, i64 %139
+  %141 = load i8, ptr %140, align 1, !tbaa !11, !range !15, !noundef !16
+  %142 = zext nneg i8 %141 to i32
+  %143 = sub nsw i32 0, %142
+  %144 = trunc nuw nsw i64 %137 to i32
+  tail call void @_Z18Graphics_put_pixeliiij(i32 noundef %131, i32 noundef %144, i32 noundef 10, i32 noundef %143)
+  %145 = add nuw nsw i64 %137, 1
+  %146 = icmp eq i64 %145, 80
+  br i1 %146, label %133, label %136, !llvm.loop !20
 }
 
 ; Function Attrs: mustprogress nocallback nofree nosync nounwind willreturn memory(argmem: readwrite)
-declare void @llvm.lifetime.start.p0(i64 immarg, ptr nocapture) #2
+declare void @llvm.lifetime.start.p0(i64 immarg, ptr captures(none)) #1
 
-; Function Attrs: mustprogress nocallback nofree nosync nounwind willreturn memory(argmem: readwrite)
-declare void @llvm.lifetime.end.p0(i64 immarg, ptr nocapture) #2
-
-; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(argmem: read) uwtable
-define dso_local noundef range(i32 0, 9) i32 @_Z23GameOfLifeGetAliveCellsP10GameOfLifeii(ptr nocapture noundef readonly %0, i32 noundef %1, i32 noundef %2) local_unnamed_addr #3 {
-  %4 = add i32 %2, 80
-  %5 = add i32 %1, 80
-  %6 = add i32 %1, 79
-  %7 = srem i32 %6, 80
-  %8 = add i32 %2, 79
-  %9 = srem i32 %8, 80
-  %10 = mul nsw i32 %9, 120
-  %11 = add nsw i32 %10, %7
-  %12 = sext i32 %11 to i64
-  %13 = getelementptr inbounds [9600 x i8], ptr %0, i64 0, i64 %12
-  %14 = load i8, ptr %13, align 1, !tbaa !7, !range !12, !noundef !13
-  %15 = srem i32 %4, 80
-  %16 = mul nsw i32 %15, 120
-  %17 = add nsw i32 %16, %7
-  %18 = sext i32 %17 to i64
-  %19 = getelementptr inbounds [9600 x i8], ptr %0, i64 0, i64 %18
-  %20 = load i8, ptr %19, align 1, !tbaa !7, !range !12, !noundef !13
-  %21 = add i32 %2, 81
-  %22 = srem i32 %21, 80
-  %23 = mul nsw i32 %22, 120
-  %24 = add nsw i32 %23, %7
-  %25 = sext i32 %24 to i64
-  %26 = getelementptr inbounds [9600 x i8], ptr %0, i64 0, i64 %25
-  %27 = load i8, ptr %26, align 1, !tbaa !7, !range !12, !noundef !13
-  %28 = srem i32 %5, 80
-  %29 = add i32 %2, 79
-  %30 = srem i32 %29, 80
-  %31 = mul nsw i32 %30, 120
-  %32 = add nsw i32 %31, %28
-  %33 = sext i32 %32 to i64
-  %34 = getelementptr inbounds [9600 x i8], ptr %0, i64 0, i64 %33
-  %35 = load i8, ptr %34, align 1, !tbaa !7, !range !12, !noundef !13
-  %36 = add i32 %2, 81
-  %37 = srem i32 %36, 80
-  %38 = mul nsw i32 %37, 120
-  %39 = add nsw i32 %38, %28
-  %40 = sext i32 %39 to i64
-  %41 = getelementptr inbounds [9600 x i8], ptr %0, i64 0, i64 %40
-  %42 = load i8, ptr %41, align 1, !tbaa !7, !range !12, !noundef !13
-  %43 = add i32 %1, 81
-  %44 = srem i32 %43, 80
-  %45 = add i32 %2, 79
-  %46 = srem i32 %45, 80
-  %47 = mul nsw i32 %46, 120
-  %48 = add nsw i32 %47, %44
-  %49 = sext i32 %48 to i64
-  %50 = getelementptr inbounds [9600 x i8], ptr %0, i64 0, i64 %49
-  %51 = load i8, ptr %50, align 1, !tbaa !7, !range !12, !noundef !13
-  %52 = srem i32 %4, 80
-  %53 = mul nsw i32 %52, 120
-  %54 = add nsw i32 %53, %44
-  %55 = sext i32 %54 to i64
-  %56 = getelementptr inbounds [9600 x i8], ptr %0, i64 0, i64 %55
-  %57 = load i8, ptr %56, align 1, !tbaa !7, !range !12, !noundef !13
-  %58 = add nuw nsw i8 %14, %20
-  %59 = add nuw nsw i8 %58, %27
-  %60 = add nuw nsw i8 %59, %35
-  %61 = add nuw nsw i8 %60, %42
-  %62 = add nuw nsw i8 %61, %51
-  %63 = add nuw nsw i8 %62, %57
-  %64 = zext nneg i8 %63 to i32
-  %65 = add i32 %2, 81
-  %66 = srem i32 %65, 80
-  %67 = mul nsw i32 %66, 120
-  %68 = add nsw i32 %67, %44
-  %69 = sext i32 %68 to i64
-  %70 = getelementptr inbounds [9600 x i8], ptr %0, i64 0, i64 %69
-  %71 = load i8, ptr %70, align 1, !tbaa !7, !range !12, !noundef !13
-  %72 = zext nneg i8 %71 to i32
-  %73 = add nuw nsw i32 %64, %72
-  ret i32 %73
-}
+; Function Attrs: mustprogress nocallback nofree nounwind willreturn memory(argmem: write)
+declare void @llvm.memset.p0.i64(ptr writeonly captures(none), i8, i64, i1 immarg) #2
 
 ; Function Attrs: mustprogress nofree norecurse nosync nounwind memory(argmem: readwrite) uwtable
-define dso_local void @_Z19GameOfLifeNextFieldP10GameOfLife(ptr nocapture noundef %0) local_unnamed_addr #4 {
+define internal fastcc void @_ZL19GameOfLifeNextFieldP10GameOfLife(ptr noundef nonnull captures(none) %0) unnamed_addr #3 {
   %2 = alloca [9600 x i8], align 16
-  call void @llvm.lifetime.start.p0(i64 9600, ptr nonnull %2) #10
+  call void @llvm.lifetime.start.p0(i64 9600, ptr nonnull %2) #7
   br label %3
 
 3:                                                ; preds = %1, %18
@@ -201,8 +243,8 @@ define dso_local void @_Z19GameOfLifeNextFieldP10GameOfLife(ptr nocapture nounde
   br i1 %20, label %21, label %3, !llvm.loop !14
 
 21:                                               ; preds = %18
-  call void @llvm.memcpy.p0.p0.i64(ptr noundef nonnull align 1 dereferenceable(9600) %0, ptr noundef nonnull align 16 dereferenceable(9600) %2, i64 9600, i1 false), !tbaa !7
-  call void @llvm.lifetime.end.p0(i64 9600, ptr nonnull %2) #10
+  call void @llvm.memcpy.p0.p0.i64(ptr noundef nonnull align 1 dereferenceable(9600) %0, ptr noundef nonnull align 16 dereferenceable(9600) %2, i64 9600, i1 false), !tbaa !11
+  call void @llvm.lifetime.end.p0(i64 9600, ptr nonnull %2) #7
   ret void
 
 22:                                               ; preds = %3, %90
@@ -214,37 +256,37 @@ define dso_local void @_Z19GameOfLifeNextFieldP10GameOfLife(ptr nocapture nounde
   %28 = add nuw nsw i32 %8, %27
   %29 = zext nneg i32 %28 to i64
   %30 = getelementptr inbounds nuw [9600 x i8], ptr %0, i64 0, i64 %29
-  %31 = load i8, ptr %30, align 1, !tbaa !7, !range !12, !noundef !13
+  %31 = load i8, ptr %30, align 1, !tbaa !11, !range !15, !noundef !16
   %32 = add nuw nsw i32 %12, %27
   %33 = zext nneg i32 %32 to i64
   %34 = getelementptr inbounds nuw [9600 x i8], ptr %0, i64 0, i64 %33
-  %35 = load i8, ptr %34, align 1, !tbaa !7, !range !12, !noundef !13
+  %35 = load i8, ptr %34, align 1, !tbaa !11, !range !15, !noundef !16
   %36 = add nuw nsw i32 %16, %27
   %37 = zext nneg i32 %36 to i64
   %38 = getelementptr inbounds nuw [9600 x i8], ptr %0, i64 0, i64 %37
-  %39 = load i8, ptr %38, align 1, !tbaa !7, !range !12, !noundef !13
+  %39 = load i8, ptr %38, align 1, !tbaa !11, !range !15, !noundef !16
   %40 = add nuw i8 %24, 80
   %41 = urem i8 %40, 80
   %42 = zext nneg i8 %41 to i32
   %43 = add nuw nsw i32 %8, %42
   %44 = zext nneg i32 %43 to i64
   %45 = getelementptr inbounds nuw [9600 x i8], ptr %0, i64 0, i64 %44
-  %46 = load i8, ptr %45, align 1, !tbaa !7, !range !12, !noundef !13
+  %46 = load i8, ptr %45, align 1, !tbaa !11, !range !15, !noundef !16
   %47 = add nuw nsw i32 %16, %42
   %48 = zext nneg i32 %47 to i64
   %49 = getelementptr inbounds nuw [9600 x i8], ptr %0, i64 0, i64 %48
-  %50 = load i8, ptr %49, align 1, !tbaa !7, !range !12, !noundef !13
+  %50 = load i8, ptr %49, align 1, !tbaa !11, !range !15, !noundef !16
   %51 = add nuw i8 %24, 81
   %52 = urem i8 %51, 80
   %53 = zext nneg i8 %52 to i32
   %54 = add nuw nsw i32 %8, %53
   %55 = zext nneg i32 %54 to i64
   %56 = getelementptr inbounds nuw [9600 x i8], ptr %0, i64 0, i64 %55
-  %57 = load i8, ptr %56, align 1, !tbaa !7, !range !12, !noundef !13
+  %57 = load i8, ptr %56, align 1, !tbaa !11, !range !15, !noundef !16
   %58 = add nuw nsw i32 %12, %53
   %59 = zext nneg i32 %58 to i64
   %60 = getelementptr inbounds nuw [9600 x i8], ptr %0, i64 0, i64 %59
-  %61 = load i8, ptr %60, align 1, !tbaa !7, !range !12, !noundef !13
+  %61 = load i8, ptr %60, align 1, !tbaa !11, !range !15, !noundef !16
   %62 = add nuw nsw i8 %35, %31
   %63 = add nuw nsw i8 %62, %39
   %64 = add nuw nsw i8 %63, %46
@@ -255,12 +297,12 @@ define dso_local void @_Z19GameOfLifeNextFieldP10GameOfLife(ptr nocapture nounde
   %69 = add nuw nsw i32 %16, %53
   %70 = zext nneg i32 %69 to i64
   %71 = getelementptr inbounds nuw [9600 x i8], ptr %0, i64 0, i64 %70
-  %72 = load i8, ptr %71, align 1, !tbaa !7, !range !12, !noundef !13
+  %72 = load i8, ptr %71, align 1, !tbaa !11, !range !15, !noundef !16
   %73 = zext nneg i8 %72 to i32
   %74 = add nuw nsw i32 %68, %73
   %75 = add nuw nsw i64 %23, %17
   %76 = getelementptr inbounds nuw [9600 x i8], ptr %0, i64 0, i64 %75
-  %77 = load i8, ptr %76, align 1, !tbaa !7, !range !12, !noundef !13
+  %77 = load i8, ptr %76, align 1, !tbaa !11, !range !15, !noundef !16
   %78 = trunc nuw i8 %77 to i1
   %79 = icmp ne i32 %74, 3
   %80 = or i1 %79, %78
@@ -268,7 +310,7 @@ define dso_local void @_Z19GameOfLifeNextFieldP10GameOfLife(ptr nocapture nounde
 
 81:                                               ; preds = %22
   %82 = getelementptr inbounds nuw [9600 x i8], ptr %2, i64 0, i64 %75
-  store i8 1, ptr %82, align 1, !tbaa !7
+  store i8 1, ptr %82, align 1, !tbaa !11
   br label %90
 
 83:                                               ; preds = %22
@@ -279,247 +321,43 @@ define dso_local void @_Z19GameOfLifeNextFieldP10GameOfLife(ptr nocapture nounde
   br i1 %86, label %88, label %89
 
 88:                                               ; preds = %83
-  store i8 0, ptr %87, align 1, !tbaa !7
+  store i8 0, ptr %87, align 1, !tbaa !11
   br label %90
 
 89:                                               ; preds = %83
-  store i8 %77, ptr %87, align 1, !tbaa !7
+  store i8 %77, ptr %87, align 1, !tbaa !11
   br label %90
 
 90:                                               ; preds = %88, %89, %81
   %91 = add nuw nsw i64 %23, 1
   %92 = icmp eq i64 %91, 120
-  br i1 %92, label %18, label %22, !llvm.loop !15
+  br i1 %92, label %18, label %22, !llvm.loop !17
 }
 
-; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(argmem: read) uwtable
-define dso_local noundef zeroext i1 @_Z18GameOfLifeGetCoordP10GameOfLifeii(ptr nocapture noundef readonly %0, i32 noundef %1, i32 noundef %2) local_unnamed_addr #3 {
-  %4 = mul nsw i32 %2, 120
-  %5 = add nsw i32 %4, %1
-  %6 = sext i32 %5 to i64
-  %7 = getelementptr inbounds [9600 x i8], ptr %0, i64 0, i64 %6
-  %8 = load i8, ptr %7, align 1, !tbaa !7, !range !12, !noundef !13
-  %9 = trunc nuw i8 %8 to i1
-  ret i1 %9
-}
+declare void @_Z18Graphics_put_pixeliiij(i32 noundef, i32 noundef, i32 noundef, i32 noundef) local_unnamed_addr #4
 
-; Function Attrs: mustprogress noreturn uwtable
-define dso_local noundef i32 @_Z3appv() local_unnamed_addr #5 {
-  %1 = alloca [9600 x i8], align 16
-  %2 = alloca %struct.GameOfLife, align 1
-  call void @llvm.lifetime.start.p0(i64 9600, ptr nonnull %2) #10
-  call void @llvm.memset.p0.i64(ptr noundef nonnull align 1 dereferenceable(9600) %2, i8 0, i64 9600, i1 false)
-  br label %3
+; Function Attrs: mustprogress nocallback nofree nosync nounwind willreturn memory(argmem: readwrite)
+declare void @llvm.lifetime.end.p0(i64 immarg, ptr captures(none)) #1
 
-3:                                                ; preds = %6, %0
-  %4 = phi i64 [ 0, %0 ], [ %7, %6 ]
-  %5 = mul nuw nsw i64 %4, 120
-  br label %9
-
-6:                                                ; preds = %15
-  %7 = add nuw nsw i64 %4, 1
-  %8 = icmp eq i64 %7, 80
-  br i1 %8, label %24, label %3, !llvm.loop !5
-
-9:                                                ; preds = %15, %3
-  %10 = phi i64 [ 0, %3 ], [ %22, %15 ]
-  %11 = load i1, ptr @_ZZ24RandomGenerator_set_seedvE4flag, align 1
-  br i1 %11, label %15, label %12
-
-12:                                               ; preds = %9
-  %13 = tail call i64 @time(ptr noundef null) #10
-  %14 = trunc i64 %13 to i32
-  tail call void @srand(i32 noundef %14) #10
-  br label %15
-
-15:                                               ; preds = %12, %9
-  store i1 true, ptr @_ZZ24RandomGenerator_set_seedvE4flag, align 1
-  %16 = tail call noundef i32 @rand() #10
-  %17 = add nuw nsw i64 %10, %5
-  %18 = getelementptr inbounds nuw [9600 x i8], ptr %2, i64 0, i64 %17
-  %19 = trunc i32 %16 to i8
-  %20 = and i8 %19, 1
-  %21 = xor i8 %20, 1
-  store i8 %21, ptr %18, align 1, !tbaa !7
-  %22 = add nuw nsw i64 %10, 1
-  %23 = icmp eq i64 %22, 120
-  br i1 %23, label %6, label %9, !llvm.loop !11
-
-24:                                               ; preds = %6
-  call void @_Z19GameOfLifeNextFieldP10GameOfLife(ptr noundef nonnull %2)
-  br label %25
-
-25:                                               ; preds = %117, %24
-  call void @llvm.lifetime.start.p0(i64 9600, ptr nonnull %1) #10
-  br label %26
-
-26:                                               ; preds = %39, %25
-  %27 = phi i64 [ 0, %25 ], [ %40, %39 ]
-  %28 = trunc i64 %27 to i32
-  %29 = add i32 %28, 79
-  %30 = urem i32 %29, 80
-  %31 = mul nuw nsw i32 %30, 120
-  %32 = add i32 %28, 80
-  %33 = urem i32 %32, 80
-  %34 = mul nuw nsw i32 %33, 120
-  %35 = add i32 %28, 81
-  %36 = urem i32 %35, 80
-  %37 = mul nuw nsw i32 %36, 120
-  %38 = mul nuw nsw i64 %27, 120
-  br label %42
-
-39:                                               ; preds = %110
-  %40 = add nuw nsw i64 %27, 1
-  %41 = icmp eq i64 %40, 80
-  br i1 %41, label %113, label %26, !llvm.loop !14
-
-42:                                               ; preds = %110, %26
-  %43 = phi i64 [ 0, %26 ], [ %111, %110 ]
-  %44 = trunc i64 %43 to i8
-  %45 = add nuw i8 %44, 79
-  %46 = urem i8 %45, 80
-  %47 = zext nneg i8 %46 to i32
-  %48 = add nuw nsw i32 %31, %47
-  %49 = zext nneg i32 %48 to i64
-  %50 = getelementptr inbounds nuw [9600 x i8], ptr %2, i64 0, i64 %49
-  %51 = load i8, ptr %50, align 1, !tbaa !7, !range !12, !noundef !13
-  %52 = add nuw nsw i32 %34, %47
-  %53 = zext nneg i32 %52 to i64
-  %54 = getelementptr inbounds nuw [9600 x i8], ptr %2, i64 0, i64 %53
-  %55 = load i8, ptr %54, align 1, !tbaa !7, !range !12, !noundef !13
-  %56 = add nuw nsw i32 %37, %47
-  %57 = zext nneg i32 %56 to i64
-  %58 = getelementptr inbounds nuw [9600 x i8], ptr %2, i64 0, i64 %57
-  %59 = load i8, ptr %58, align 1, !tbaa !7, !range !12, !noundef !13
-  %60 = add nuw i8 %44, 80
-  %61 = urem i8 %60, 80
-  %62 = zext nneg i8 %61 to i32
-  %63 = add nuw nsw i32 %31, %62
-  %64 = zext nneg i32 %63 to i64
-  %65 = getelementptr inbounds nuw [9600 x i8], ptr %2, i64 0, i64 %64
-  %66 = load i8, ptr %65, align 1, !tbaa !7, !range !12, !noundef !13
-  %67 = add nuw nsw i32 %37, %62
-  %68 = zext nneg i32 %67 to i64
-  %69 = getelementptr inbounds nuw [9600 x i8], ptr %2, i64 0, i64 %68
-  %70 = load i8, ptr %69, align 1, !tbaa !7, !range !12, !noundef !13
-  %71 = add nuw i8 %44, 81
-  %72 = urem i8 %71, 80
-  %73 = zext nneg i8 %72 to i32
-  %74 = add nuw nsw i32 %31, %73
-  %75 = zext nneg i32 %74 to i64
-  %76 = getelementptr inbounds nuw [9600 x i8], ptr %2, i64 0, i64 %75
-  %77 = load i8, ptr %76, align 1, !tbaa !7, !range !12, !noundef !13
-  %78 = add nuw nsw i32 %34, %73
-  %79 = zext nneg i32 %78 to i64
-  %80 = getelementptr inbounds nuw [9600 x i8], ptr %2, i64 0, i64 %79
-  %81 = load i8, ptr %80, align 1, !tbaa !7, !range !12, !noundef !13
-  %82 = add nuw nsw i8 %55, %51
-  %83 = add nuw nsw i8 %82, %59
-  %84 = add nuw nsw i8 %83, %66
-  %85 = add nuw nsw i8 %84, %70
-  %86 = add nuw nsw i8 %85, %77
-  %87 = add nuw nsw i8 %86, %81
-  %88 = zext nneg i8 %87 to i32
-  %89 = add nuw nsw i32 %37, %73
-  %90 = zext nneg i32 %89 to i64
-  %91 = getelementptr inbounds nuw [9600 x i8], ptr %2, i64 0, i64 %90
-  %92 = load i8, ptr %91, align 1, !tbaa !7, !range !12, !noundef !13
-  %93 = zext nneg i8 %92 to i32
-  %94 = add nuw nsw i32 %88, %93
-  %95 = add nuw nsw i64 %43, %38
-  %96 = getelementptr inbounds nuw [9600 x i8], ptr %2, i64 0, i64 %95
-  %97 = load i8, ptr %96, align 1, !tbaa !7, !range !12, !noundef !13
-  %98 = trunc nuw i8 %97 to i1
-  %99 = icmp ne i32 %94, 3
-  %100 = or i1 %99, %98
-  br i1 %100, label %103, label %101
-
-101:                                              ; preds = %42
-  %102 = getelementptr inbounds nuw [9600 x i8], ptr %1, i64 0, i64 %95
-  store i8 1, ptr %102, align 1, !tbaa !7
-  br label %110
-
-103:                                              ; preds = %42
-  %104 = add nsw i32 %94, -4
-  %105 = icmp ult i32 %104, -2
-  %106 = and i1 %105, %98
-  %107 = getelementptr inbounds nuw [9600 x i8], ptr %1, i64 0, i64 %95
-  br i1 %106, label %108, label %109
-
-108:                                              ; preds = %103
-  store i8 0, ptr %107, align 1, !tbaa !7
-  br label %110
-
-109:                                              ; preds = %103
-  store i8 %97, ptr %107, align 1, !tbaa !7
-  br label %110
-
-110:                                              ; preds = %109, %108, %101
-  %111 = add nuw nsw i64 %43, 1
-  %112 = icmp eq i64 %111, 120
-  br i1 %112, label %39, label %42, !llvm.loop !15
-
-113:                                              ; preds = %39
-  call void @llvm.memcpy.p0.p0.i64(ptr noundef nonnull align 1 dereferenceable(9600) %2, ptr noundef nonnull align 16 dereferenceable(9600) %1, i64 9600, i1 false), !tbaa !7
-  call void @llvm.lifetime.end.p0(i64 9600, ptr nonnull %1) #10
-  br label %114
-
-114:                                              ; preds = %113, %118
-  %115 = phi i64 [ 0, %113 ], [ %119, %118 ]
-  %116 = trunc nuw nsw i64 %115 to i32
-  br label %121
-
-117:                                              ; preds = %118
-  tail call void @_Z14Graphics_flushv()
-  br label %25, !llvm.loop !16
-
-118:                                              ; preds = %121
-  %119 = add nuw nsw i64 %115, 1
-  %120 = icmp eq i64 %119, 120
-  br i1 %120, label %117, label %114, !llvm.loop !17
-
-121:                                              ; preds = %114, %121
-  %122 = phi i64 [ 0, %114 ], [ %130, %121 ]
-  %123 = mul nuw nsw i64 %122, 120
-  %124 = add nuw nsw i64 %123, %115
-  %125 = getelementptr inbounds nuw [9600 x i8], ptr %2, i64 0, i64 %124
-  %126 = load i8, ptr %125, align 1, !tbaa !7, !range !12, !noundef !13
-  %127 = zext nneg i8 %126 to i32
-  %128 = sub nsw i32 0, %127
-  %129 = trunc nuw nsw i64 %122 to i32
-  tail call void @_Z18Graphics_put_pixeliiij(i32 noundef %116, i32 noundef %129, i32 noundef 10, i32 noundef %128)
-  %130 = add nuw nsw i64 %122, 1
-  %131 = icmp eq i64 %130, 80
-  br i1 %131, label %118, label %121, !llvm.loop !18
-}
-
-; Function Attrs: mustprogress nocallback nofree nounwind willreturn memory(argmem: write)
-declare void @llvm.memset.p0.i64(ptr nocapture writeonly, i8, i64, i1 immarg) #6
-
-declare void @_Z18Graphics_put_pixeliiij(i32 noundef, i32 noundef, i32 noundef, i32 noundef) local_unnamed_addr #7
-
-declare void @_Z14Graphics_flushv() local_unnamed_addr #7
+declare void @_Z14Graphics_flushv() local_unnamed_addr #4
 
 ; Function Attrs: mustprogress norecurse noreturn uwtable
-define dso_local noundef i32 @main() local_unnamed_addr #8 {
+define dso_local noundef i32 @main() local_unnamed_addr #5 {
   %1 = tail call noundef i32 @_Z3appv()
   unreachable
 }
 
 ; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: readwrite)
-declare void @llvm.memcpy.p0.p0.i64(ptr noalias nocapture writeonly, ptr noalias nocapture readonly, i64, i1 immarg) #9
+declare void @llvm.memcpy.p0.p0.i64(ptr noalias writeonly captures(none), ptr noalias readonly captures(none), i64, i1 immarg) #6
 
-attributes #0 = { mustprogress nounwind uwtable "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
-attributes #1 = { nounwind "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
-attributes #2 = { mustprogress nocallback nofree nosync nounwind willreturn memory(argmem: readwrite) }
-attributes #3 = { mustprogress nofree norecurse nosync nounwind willreturn memory(argmem: read) uwtable "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
-attributes #4 = { mustprogress nofree norecurse nosync nounwind memory(argmem: readwrite) uwtable "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
-attributes #5 = { mustprogress noreturn uwtable "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
-attributes #6 = { mustprogress nocallback nofree nounwind willreturn memory(argmem: write) }
-attributes #7 = { "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
-attributes #8 = { mustprogress norecurse noreturn uwtable "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
-attributes #9 = { nocallback nofree nounwind willreturn memory(argmem: readwrite) }
-attributes #10 = { nounwind }
+attributes #0 = { mustprogress noreturn uwtable "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #1 = { mustprogress nocallback nofree nosync nounwind willreturn memory(argmem: readwrite) }
+attributes #2 = { mustprogress nocallback nofree nounwind willreturn memory(argmem: write) }
+attributes #3 = { mustprogress nofree norecurse nosync nounwind memory(argmem: readwrite) uwtable "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #4 = { "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #5 = { mustprogress norecurse noreturn uwtable "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #6 = { nocallback nofree nounwind willreturn memory(argmem: readwrite) }
+attributes #7 = { nounwind }
 
 !llvm.module.flags = !{!0, !1, !2, !3}
 !llvm.ident = !{!4}
@@ -528,18 +366,20 @@ attributes #10 = { nounwind }
 !1 = !{i32 8, !"PIC Level", i32 2}
 !2 = !{i32 7, !"PIE Level", i32 2}
 !3 = !{i32 7, !"uwtable", i32 2}
-!4 = !{!"Ubuntu clang version 20.1.2 (0ubuntu1~24.04.2)"}
-!5 = distinct !{!5, !6}
-!6 = !{!"llvm.loop.mustprogress"}
-!7 = !{!8, !8, i64 0}
-!8 = !{!"bool", !9, i64 0}
-!9 = !{!"omnipotent char", !10, i64 0}
-!10 = !{!"Simple C++ TBAA"}
-!11 = distinct !{!11, !6}
-!12 = !{i8 0, i8 2}
-!13 = !{}
-!14 = distinct !{!14, !6}
-!15 = distinct !{!15, !6}
-!16 = distinct !{!16, !6}
-!17 = distinct !{!17, !6}
-!18 = distinct !{!18, !6}
+!4 = !{!"Ubuntu clang version 21.1.8 (++20251221032922+2078da43e25a-1~exp1~20251221153059.70)"}
+!5 = !{!6, !6, i64 0}
+!6 = !{!"int", !7, i64 0}
+!7 = !{!"omnipotent char", !8, i64 0}
+!8 = !{!"Simple C++ TBAA"}
+!9 = distinct !{!9, !10}
+!10 = !{!"llvm.loop.mustprogress"}
+!11 = !{!12, !12, i64 0}
+!12 = !{!"bool", !7, i64 0}
+!13 = distinct !{!13, !10}
+!14 = distinct !{!14, !10}
+!15 = !{i8 0, i8 2}
+!16 = !{}
+!17 = distinct !{!17, !10}
+!18 = distinct !{!18, !10}
+!19 = distinct !{!19, !10}
+!20 = distinct !{!20, !10}
