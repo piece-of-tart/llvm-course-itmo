@@ -85,7 +85,3 @@ int app() {
     Graphics_flush();
   }
 }
-
-int main() {
-  app();
-}

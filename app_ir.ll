@@ -1,5 +1,5 @@
-; ModuleID = '/home/michael/itmo/llvm-2025/src/app.cpp'
-source_filename = "/home/michael/itmo/llvm-2025/src/app.cpp"
+; ModuleID = '/home/michael/itmo/llvm-2025/src/app/app.cpp'
+source_filename = "/home/michael/itmo/llvm-2025/src/app/app.cpp"
 target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-pc-linux-gnu"
 
@@ -11,7 +11,7 @@ target triple = "x86_64-pc-linux-gnu"
 define dso_local noundef i32 @_Z3appv() local_unnamed_addr #0 {
   %1 = alloca [9600 x i8], align 16
   %2 = alloca %struct.GameOfLife, align 1
-  call void @llvm.lifetime.start.p0(i64 9600, ptr nonnull %2) #7
+  call void @llvm.lifetime.start.p0(i64 9600, ptr nonnull %2) #6
   call void @llvm.memset.p0.i64(ptr noundef nonnull align 1 dereferenceable(9600) %2, i8 0, i64 9600, i1 false)
   %3 = load i32, ptr @_ZZL14GameOfLifeInitP10GameOfLifeE4rand, align 4, !tbaa !5
   br label %4
@@ -65,7 +65,7 @@ define dso_local noundef i32 @_Z3appv() local_unnamed_addr #0 {
   br label %40
 
 40:                                               ; preds = %132, %39
-  call void @llvm.lifetime.start.p0(i64 9600, ptr nonnull %1) #7
+  call void @llvm.lifetime.start.p0(i64 9600, ptr nonnull %1) #6
   br label %41
 
 41:                                               ; preds = %54, %40
@@ -176,7 +176,7 @@ define dso_local noundef i32 @_Z3appv() local_unnamed_addr #0 {
 
 128:                                              ; preds = %54
   call void @llvm.memcpy.p0.p0.i64(ptr noundef nonnull align 1 dereferenceable(9600) %2, ptr noundef nonnull align 16 dereferenceable(9600) %1, i64 9600, i1 false), !tbaa !11
-  call void @llvm.lifetime.end.p0(i64 9600, ptr nonnull %1) #7
+  call void @llvm.lifetime.end.p0(i64 9600, ptr nonnull %1) #6
   br label %129
 
 129:                                              ; preds = %128, %133
@@ -217,7 +217,7 @@ declare void @llvm.memset.p0.i64(ptr writeonly captures(none), i8, i64, i1 immar
 ; Function Attrs: mustprogress nofree norecurse nosync nounwind memory(argmem: readwrite) uwtable
 define internal fastcc void @_ZL19GameOfLifeNextFieldP10GameOfLife(ptr noundef nonnull captures(none) %0) unnamed_addr #3 {
   %2 = alloca [9600 x i8], align 16
-  call void @llvm.lifetime.start.p0(i64 9600, ptr nonnull %2) #7
+  call void @llvm.lifetime.start.p0(i64 9600, ptr nonnull %2) #6
   br label %3
 
 3:                                                ; preds = %1, %18
@@ -244,7 +244,7 @@ define internal fastcc void @_ZL19GameOfLifeNextFieldP10GameOfLife(ptr noundef n
 
 21:                                               ; preds = %18
   call void @llvm.memcpy.p0.p0.i64(ptr noundef nonnull align 1 dereferenceable(9600) %0, ptr noundef nonnull align 16 dereferenceable(9600) %2, i64 9600, i1 false), !tbaa !11
-  call void @llvm.lifetime.end.p0(i64 9600, ptr nonnull %2) #7
+  call void @llvm.lifetime.end.p0(i64 9600, ptr nonnull %2) #6
   ret void
 
 22:                                               ; preds = %3, %90
@@ -341,23 +341,16 @@ declare void @llvm.lifetime.end.p0(i64 immarg, ptr captures(none)) #1
 
 declare void @_Z14Graphics_flushv() local_unnamed_addr #4
 
-; Function Attrs: mustprogress norecurse noreturn uwtable
-define dso_local noundef i32 @main() local_unnamed_addr #5 {
-  %1 = tail call noundef i32 @_Z3appv()
-  unreachable
-}
-
 ; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: readwrite)
-declare void @llvm.memcpy.p0.p0.i64(ptr noalias writeonly captures(none), ptr noalias readonly captures(none), i64, i1 immarg) #6
+declare void @llvm.memcpy.p0.p0.i64(ptr noalias writeonly captures(none), ptr noalias readonly captures(none), i64, i1 immarg) #5
 
 attributes #0 = { mustprogress noreturn uwtable "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
 attributes #1 = { mustprogress nocallback nofree nosync nounwind willreturn memory(argmem: readwrite) }
 attributes #2 = { mustprogress nocallback nofree nounwind willreturn memory(argmem: write) }
 attributes #3 = { mustprogress nofree norecurse nosync nounwind memory(argmem: readwrite) uwtable "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
 attributes #4 = { "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
-attributes #5 = { mustprogress norecurse noreturn uwtable "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
-attributes #6 = { nocallback nofree nounwind willreturn memory(argmem: readwrite) }
-attributes #7 = { nounwind }
+attributes #5 = { nocallback nofree nounwind willreturn memory(argmem: readwrite) }
+attributes #6 = { nounwind }
 
 !llvm.module.flags = !{!0, !1, !2, !3}
 !llvm.ident = !{!4}

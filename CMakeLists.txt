@@ -18,16 +18,18 @@ FetchContent_Declare(SFML
     SYSTEM)
 FetchContent_MakeAvailable(SFML)
 
-add_executable(game_of_life_llvm 
-  src/app.cpp
-  src/sim.cpp
-)
+add_library(game_of_life_app STATIC src/app/sim.cpp src/app/app.cpp)
+target_link_libraries(game_of_life_app PUBLIC SFML::System SFML::Window SFML::Graphics)
+target_compile_options(game_of_life_app PRIVATE -Wall -Wextra)
 
-target_link_libraries(${MAIN_TARGET} PRIVATE SFML::System SFML::Window SFML::Graphics)
-target_compile_options(${MAIN_TARGET} PRIVATE -Wall -Wextra)
+add_executable(game_of_live_main
+  src/app/main.cpp
+)
+target_link_libraries(game_of_live_main PRIVATE game_of_life_app)
+
 
 add_custom_target(app_llvm_ir
-  COMMAND ${CMAKE_CXX_COMPILER} -O3 -S -emit-llvm -o ${CMAKE_BINARY_DIR}/app_ir.ll ${CMAKE_SOURCE_DIR}/src/app.cpp
-  DEPENDS ${CMAKE_SOURCE_DIR}/src/app.cpp
+  COMMAND ${CMAKE_CXX_COMPILER} -O3 -S -emit-llvm -o ${CMAKE_BINARY_DIR}/app_ir.ll ${CMAKE_SOURCE_DIR}/src/app/app.cpp
+  DEPENDS ${CMAKE_SOURCE_DIR}/src/app/app.cpp
   COMMENT "Generating LLVM IR for app.cpp"
 )
