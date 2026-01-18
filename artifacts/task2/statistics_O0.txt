@@ -1,0 +1,27 @@
+Chunks: 1
+Totals by len: 2=783418, 3=783417, 4=783416, 5=783415
+Overall total windows: 3133666
+
+-------------------- TOP 20 windows (len in [2, 3, 4, 5]) --------------------
+  #  len     hits     share  pattern
+------------------------------------
+  1    2    47595     6.08%  load <- alloca  |  add <- load
+  2    3    44898     5.73%  load <- alloca  |  icmp <- load  |  br <- icmp
+  3    2    44898     5.73%  icmp <- load  |  br <- icmp
+  4    2    44898     5.73%  load <- alloca  |  icmp <- load
+  5    4    31745     4.05%  load <- alloca  |  icmp <- load  |  br <- icmp  |  load <- alloca
+  6    3    31745     4.05%  icmp <- load  |  br <- icmp  |  load <- alloca
+  7    2    31745     4.05%  br <- icmp  |  load <- alloca
+  8    4    30288     3.87%  add <- load  |  store <- alloca  |  store <- add  |  load <- alloca
+  9    3    30288     3.87%  add <- load  |  store <- alloca  |  store <- add
+ 10    3    30288     3.87%  store <- alloca  |  store <- add  |  load <- alloca
+ 11    2    30288     3.87%  add <- load  |  store <- alloca
+ 12    2    30288     3.87%  store <- add  |  load <- alloca
+ 13    2    30288     3.87%  store <- alloca  |  store <- add
+ 14    5    29135     3.72%  load <- alloca  |  add <- load  |  store <- alloca  |  store <- add  |  load <- alloca
+ 15    4    29135     3.72%  load <- alloca  |  add <- load  |  store <- alloca  |  store <- add
+ 16    3    29135     3.72%  load <- alloca  |  add <- load  |  store <- alloca
+ 17    2    28800     3.68%  xor <- load  |  store <- xor
+ 18    5    24686     3.15%  add <- load  |  store <- alloca  |  store <- add  |  load <- alloca  |  icmp <- load
+ 19    5    24686     3.15%  store <- alloca  |  store <- add  |  load <- alloca  |  icmp <- load  |  br <- icmp
+ 20    4    24686     3.15%  store <- add  |  load <- alloca  |  icmp <- load  |  br <- icmp

@@ -1,0 +1,46 @@
+[project]
+name = "llvm-pass-patterns"
+version = "0.1.0"
+description = ""
+readme = ""
+requires-python = ">=3.14"
+license = { text = "MIT" }
+authors = [
+  { name = "Michael" }
+]
+
+dependencies = [
+  "matplotlib>=3.7"
+]
+
+[project.scripts]
+statistics = "src/pass/statistics:main"
+
+[tool.setuptools]
+py-modules = ["statistics"]
+
+[tool.uv]
+dev-dependencies = [
+    "mypy >= 1.11.1",
+    "ruff >= 0.11.4"
+]
+
+[tool.ruff.lint]
+ignore = []
+extend-select = ["UP006", "UP007", "UP019", "UP026", "UP035", "UP044", "UP045"]
+
+[tool.mypy]
+python_version = 3.12
+disable_error_code = [
+    "no-any-return",
+]
+warn_redundant_casts = true
+warn_unused_ignores = true
+disallow_subclassing_any = true
+check_untyped_defs = true
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+warn_return_any = true
+no_implicit_optional = true
+strict_optional = true
+ignore_missing_imports = true

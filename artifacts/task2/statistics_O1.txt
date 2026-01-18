@@ -1,0 +1,27 @@
+Chunks: 1
+Totals by len: 2=755615, 3=755614, 4=755613, 5=755612
+Overall total windows: 3022454
+
+-------------------- TOP 20 windows (len in [2, 3, 4, 5]) --------------------
+  #  len     hits     share  pattern
+------------------------------------
+  1    2    60467     8.00%  icmp <- add  |  br <- icmp
+  2    2    42948     5.68%  add <- add  |  urem <- add
+  3    3    39043     5.17%  br <- icmp  |  add <- add  |  urem <- add
+  4    2    39043     5.17%  br <- icmp  |  add <- add
+  5    2    35139     4.65%  icmp <- or  |  br <- icmp
+  6    5    31235     4.13%  add <- add  |  urem <- add  |  mul <- urem  |  add <- urem  |  add <- mul
+  7    5    31235     4.13%  add <- mul  |  zext <- add  |  getelementptr <- alloca  |  getelementptr <- zext  |  load <- getelementptr
+  8    5    31235     4.13%  add <- urem  |  add <- mul  |  zext <- add  |  getelementptr <- alloca  |  getelementptr <- zext
+  9    5    31235     4.13%  br <- icmp  |  add <- add  |  urem <- add  |  mul <- urem  |  add <- urem
+ 10    5    31235     4.13%  getelementptr <- alloca  |  getelementptr <- zext  |  load <- getelementptr  |  zext <- load  |  add <- zext
+ 11    5    31235     4.13%  getelementptr <- zext  |  load <- getelementptr  |  zext <- load  |  add <- zext  |  icmp <- add
+ 12    5    31235     4.13%  icmp <- or  |  br <- icmp  |  add <- add  |  urem <- add  |  mul <- urem
+ 13    5    31235     4.13%  load <- getelementptr  |  zext <- load  |  add <- zext  |  icmp <- add  |  br <- icmp
+ 14    5    31235     4.13%  mul <- urem  |  add <- urem  |  add <- mul  |  zext <- add  |  getelementptr <- alloca
+ 15    5    31235     4.13%  urem <- add  |  mul <- urem  |  add <- urem  |  add <- mul  |  zext <- add
+ 16    5    31235     4.13%  zext <- add  |  getelementptr <- alloca  |  getelementptr <- zext  |  load <- getelementptr  |  zext <- load
+ 17    4    31235     4.13%  add <- add  |  urem <- add  |  mul <- urem  |  add <- urem
+ 18    4    31235     4.13%  add <- mul  |  zext <- add  |  getelementptr <- alloca  |  getelementptr <- zext
+ 19    4    31235     4.13%  add <- urem  |  add <- mul  |  zext <- add  |  getelementptr <- alloca
+ 20    4    31235     4.13%  br <- icmp  |  add <- add  |  urem <- add  |  mul <- urem

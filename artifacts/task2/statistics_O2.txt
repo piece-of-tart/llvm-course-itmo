@@ -1,0 +1,27 @@
+Chunks: 1
+Totals by len: 2=621799, 3=621798, 4=621797, 5=621796
+Overall total windows: 2487190
+
+-------------------- TOP 20 windows (len in [2, 3, 4, 5]) --------------------
+  #  len     hits     share  pattern
+------------------------------------
+  1    3    44118     7.10%  add <- mul  |  add <- zext  |  zext <- add
+  2    2    44118     7.10%  add <- mul  |  add <- zext
+  3    2    44118     7.10%  add <- zext  |  zext <- add
+  4    5    44117     7.10%  add <- mul  |  add <- zext  |  zext <- add  |  getelementptr <- zext  |  load <- getelementptr
+  5    4    44117     7.10%  add <- mul  |  add <- zext  |  zext <- add  |  getelementptr <- zext
+  6    4    44117     7.10%  add <- zext  |  zext <- add  |  getelementptr <- zext  |  load <- getelementptr
+  7    3    44117     7.10%  add <- zext  |  zext <- add  |  getelementptr <- zext
+  8    3    44117     7.10%  zext <- add  |  getelementptr <- zext  |  load <- getelementptr
+  9    2    44117     7.10%  getelementptr <- zext  |  load <- getelementptr
+ 10    2    44117     7.10%  zext <- add  |  getelementptr <- zext
+ 11    2    27570     4.43%  add <- load  |  add <- add
+ 12    5    22059     3.55%  add <- zext  |  zext <- add  |  getelementptr <- zext  |  load <- getelementptr  |  add <- mul
+ 13    5    22059     3.55%  getelementptr <- zext  |  load <- getelementptr  |  add <- mul  |  add <- zext  |  zext <- add
+ 14    5    22059     3.55%  load <- getelementptr  |  add <- mul  |  add <- zext  |  zext <- add  |  getelementptr <- zext
+ 15    5    22059     3.55%  zext <- add  |  getelementptr <- zext  |  load <- getelementptr  |  add <- mul  |  add <- zext
+ 16    4    22059     3.55%  getelementptr <- zext  |  load <- getelementptr  |  add <- mul  |  add <- zext
+ 17    4    22059     3.55%  load <- getelementptr  |  add <- mul  |  add <- zext  |  zext <- add
+ 18    4    22059     3.55%  zext <- add  |  getelementptr <- zext  |  load <- getelementptr  |  add <- mul
+ 19    3    22059     3.55%  getelementptr <- zext  |  load <- getelementptr  |  add <- mul
+ 20    3    22059     3.55%  load <- getelementptr  |  add <- mul  |  add <- zext
