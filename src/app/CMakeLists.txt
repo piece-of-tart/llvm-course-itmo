@@ -1,5 +1,10 @@
-add_library(game_of_life_app STATIC sim.cpp app.cpp)
-target_link_libraries(game_of_life_app PUBLIC SFML::System SFML::Window SFML::Graphics)
+add_library(sim STATIC sim.cpp)
+target_link_libraries(sim PUBLIC SFML::System SFML::Window SFML::Graphics)
+target_include_directories(sim PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+
+add_library(game_of_life_app STATIC  app.cpp)
+target_link_libraries(game_of_life_app PUBLIC sim)
 target_compile_options(game_of_life_app PRIVATE -Wall -Wextra)
 
 set(PATH_TO_APP_SOURCE ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)

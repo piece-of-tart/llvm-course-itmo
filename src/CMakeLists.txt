@@ -6,3 +6,4 @@ endif()
 
 
 add_subdirectory(pass)
+add_subdirectory(ir_gen)

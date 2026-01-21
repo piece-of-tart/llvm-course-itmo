@@ -3,9 +3,6 @@ set(APP_SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/log.c
 )
 
-add_library(sim STATIC ${PATH_TO_APP_SOURCE}/sim.cpp )
-target_link_libraries(sim PUBLIC SFML::System SFML::Window SFML::Graphics)
-
 set(PASS_STAMP "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/instruction_pass.stamp")
 
 add_custom_command(

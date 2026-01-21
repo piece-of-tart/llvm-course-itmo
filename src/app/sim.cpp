@@ -2,16 +2,9 @@
 
 #include "sim.h"
 
-#define WIDTH_IN_PIXEL   1200
-#define HEIGHT_IN_PIXEL  800
-#define RADIUS           10
-
-#define WIDTH  (WIDTH_IN_PIXEL / RADIUS)
-#define HEIGHT (HEIGHT_IN_PIXEL / RADIUS)
-
 sf::RenderWindow graphics_window(sf::VideoMode({WIDTH_IN_PIXEL, HEIGHT_IN_PIXEL}), "Game of Life");
 
-void Graphics_put_pixel(int x, int y, int r, unsigned argb) {
+extern "C" void Graphics_put_pixel(int x, int y, int r, unsigned argb) {
   sf::RectangleShape shape;
   shape.setSize(sf::Vector2f(r, r));
   shape.setPosition({1.0f * x * r, 1.0f * y * r});
@@ -19,7 +12,7 @@ void Graphics_put_pixel(int x, int y, int r, unsigned argb) {
   graphics_window.draw(shape);
 }
 
-void Graphics_flush() {
+extern "C" void Graphics_flush() {
   graphics_window.display();
   graphics_window.clear();
 }

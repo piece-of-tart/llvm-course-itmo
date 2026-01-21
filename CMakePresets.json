@@ -7,11 +7,21 @@
   },
   "configurePresets": [
     {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "LLVM_COURSE_ITMO_USE_CONAN": "OFF"
+      }
+    },
+    {
       "name": "debug",
       "displayName": "Debug",
       "description": "Configure with debug information and no optimizations",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build",
+      "inherits": [
+        "base"
+      ],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
       }
@@ -20,8 +30,9 @@
       "name": "release",
       "displayName": "Release",
       "description": "Configure with optimizations and no debug information",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build",
+      "inherits": [
+        "base"
+      ],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
       }

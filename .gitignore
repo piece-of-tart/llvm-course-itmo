@@ -64,3 +64,10 @@ junit.xml
 .tox/
 .nox/
 .hypothesis/
+
+# VSCODE
+.vscode
+
+# CMakePresets
+CMakeUserPresets.json
+
