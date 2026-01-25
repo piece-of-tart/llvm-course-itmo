@@ -1,3 +1,4 @@
+#include <charconv>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/GenericValue.h>
 #include <llvm/IR/IRBuilder.h>
@@ -7,288 +8,25 @@
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_ostream.h>
 
+#include <boost/hana/functional/overload.hpp>
 #include <boost/intrusive/list.hpp>
 #include <boost/intrusive/unordered_set.hpp>
 
+#include <format>
 #include <fstream>
 #include <iostream>
 #include <memory>
 #include <stack>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <variant>
 #include <vector>
-
-// using namespace llvm;
-
-//////////////////////////////
-// All instructions
-//////////////////////////////
-
-enum InsnId_t {
-  EXIT, // 0
-  PUSH, // imm
-  POP,  // 1r
-  ADD_S,// 0
-  SUB_S,// 0
-  MUL_S,// 0
-  DIV_S,// 0
-  NEG,  // 1r
-  ADD,  // 3r
-  SUB,  // 3r
-  MUL,  // 3r
-  DIV,  // 3r
-  ADDI, // 2r imm
-  SUBI, // 2r imm
-  MULI, // 2r imm
-  DIVI, // 2r imm
-  B,    // imm
-  RET,  // 0
-  BL,   // imm
-  BEQ,  // 2r imm
-  BNE,  // 2r imm
-  BGE,  // 2r imm
-  BLT,  // 2r imm
-  READ, // 1r
-  WRITE // 1r
-};
-
-//////////////////////////////
-// Model for simulation
-//////////////////////////////
-
-using RegId_t = uint8_t;
-using RegVal_t = uint32_t;
-using Stack_t = std::stack<RegVal_t>;
-
-const int REG_FILE_SIZE = 4;
-class CPU {
- public:
-  RegVal_t REG_FILE[REG_FILE_SIZE] = {};
-  RegVal_t PC;
-  RegVal_t NEXT_PC;
-  Stack_t CALL_STACK;
-  Stack_t STACK;
-  uint32_t RUN;
-  bool stack_ok() {
-    if (STACK.empty()) {
-      RUN = 0;
-      outs() << "[RUNTIME ERROR] STACK ERROR\n";
-      return false;
-    }
-    return true;
-  }
-  bool call_stack_ok() {
-    if (STACK.empty()) {
-      RUN = 0;
-      outs() << "[RUNTIME ERROR] CALL STACK ERROR\n";
-      return false;
-    }
-    return true;
-  }
-};
-
-//////////////////////////////
-// Universal Instruction
-//////////////////////////////
-
-class Instr {
- public:
-  InsnId_t m_ID;
-  void (*m_INSTR)(CPU *, Instr *);
-  RegId_t m_rs1;
-  RegId_t m_rs2;
-  RegId_t m_rs3;
-  RegVal_t m_imm;
-  std::string m_name;
-  Instr(InsnId_t ID, void (*do_INSTR)(CPU *, Instr *), std::string name)
-      : m_ID(ID), m_INSTR(do_INSTR), m_name(name) {}
-  Instr(InsnId_t ID, void (*do_INSTR)(CPU *, Instr *), std::string name,
-        RegId_t rs1)
-      : m_ID(ID), m_INSTR(do_INSTR), m_name(name), m_rs1(rs1) {}
-  Instr(InsnId_t ID, void (*do_INSTR)(CPU *, Instr *), std::string name,
-        RegVal_t imm)
-      : m_ID(ID), m_INSTR(do_INSTR), m_name(name), m_imm(imm) {}
-  Instr(InsnId_t ID, void (*do_INSTR)(CPU *, Instr *), std::string name,
-        RegId_t rs1, RegId_t rs2, RegId_t rs3)
-      : m_ID(ID), m_INSTR(do_INSTR), m_name(name), m_rs1(rs1), m_rs2(rs2),
-        m_rs3(rs3) {}
-  Instr(InsnId_t ID, void (*do_INSTR)(CPU *, Instr *), std::string name,
-        RegId_t rs1, RegId_t rs2, RegVal_t imm)
-      : m_ID(ID), m_INSTR(do_INSTR), m_name(name), m_rs1(rs1), m_rs2(rs2),
-        m_imm(imm) {}
-  void dump() { outs() << m_name << '\n'; }
-  bool isCFI() {
-    return m_ID == EXIT || m_ID == B || m_ID == RET || m_ID == BL || m_ID == BEQ || m_ID == BNE || m_ID == BGE || m_ID == BLT;
-  }
-};
-
-//////////////////////////////
-// Interpreter function
-//////////////////////////////
-
-void do_exit(CPU *cpu, Instr *instr) {
-  instr->dump();
-  cpu->RUN = 0;
-}
-void do_push(CPU *cpu, Instr *instr) {
-  instr->dump();
-  cpu->STACK.push(instr->m_imm);
-}
-void do_pop(CPU *cpu, Instr *instr) {
-  instr->dump();
-  if (!cpu->stack_ok()) {
-    return;
-  }
-  cpu->REG_FILE[instr->m_rs1] = cpu->STACK.top();
-  cpu->STACK.pop();
-}
-void do_add_s(CPU *cpu, Instr *instr) {
-  instr->dump();
-  if (!cpu->stack_ok()) {
-    return;
-  }
-  RegVal_t val1 = cpu->STACK.top();
-  cpu->STACK.pop();
-  if (!cpu->stack_ok()) {
-    return;
-  }
-  RegVal_t val2 = cpu->STACK.top();
-  cpu->STACK.pop();
-  cpu->STACK.push(val1 + val2);
-}
-void do_sub_s(CPU *cpu, Instr *instr) {
-  instr->dump();
-  if (!cpu->stack_ok()) {
-    return;
-  }
-  RegVal_t val1 = cpu->STACK.top();
-  cpu->STACK.pop();
-  if (!cpu->stack_ok()) {
-    return;
-  }
-  RegVal_t val2 = cpu->STACK.top();
-  cpu->STACK.pop();
-  cpu->STACK.push(val2 - val1);
-}
-void do_mul_s(CPU *cpu, Instr *instr) {
-  instr->dump();
-  if (!cpu->stack_ok()) {
-    return;
-  }
-  RegVal_t val1 = cpu->STACK.top();
-  cpu->STACK.pop();
-  if (!cpu->stack_ok()) {
-    return;
-  }
-  RegVal_t val2 = cpu->STACK.top();
-  cpu->STACK.pop();
-  cpu->STACK.push(val1 * val2);
-}
-void do_div_s(CPU *cpu, Instr *instr) {
-  instr->dump();
-  if (!cpu->stack_ok()) {
-    return;
-  }
-  RegVal_t val1 = cpu->STACK.top();
-  cpu->STACK.pop();
-  if (!cpu->stack_ok()) {
-    return;
-  }
-  RegVal_t val2 = cpu->STACK.top();
-  cpu->STACK.pop();
-  cpu->STACK.push(val2 / val1);
-}
-void do_neg(CPU *cpu, Instr *instr) {
-  instr->dump();
-  cpu->REG_FILE[instr->m_rs1] = -cpu->REG_FILE[instr->m_rs1];
-}
-void do_add(CPU *cpu, Instr *instr) {
-  instr->dump();
-  cpu->REG_FILE[instr->m_rs1] =
-      cpu->REG_FILE[instr->m_rs2] + cpu->REG_FILE[instr->m_rs3];
-}
-void do_sub(CPU *cpu, Instr *instr) {
-  instr->dump();
-  cpu->REG_FILE[instr->m_rs1] =
-      cpu->REG_FILE[instr->m_rs2] - cpu->REG_FILE[instr->m_rs3];
-}
-void do_mul(CPU *cpu, Instr *instr) {
-  instr->dump();
-  cpu->REG_FILE[instr->m_rs1] =
-      cpu->REG_FILE[instr->m_rs2] * cpu->REG_FILE[instr->m_rs3];
-}
-void do_div(CPU *cpu, Instr *instr) {
-  instr->dump();
-  cpu->REG_FILE[instr->m_rs1] =
-      cpu->REG_FILE[instr->m_rs2] / cpu->REG_FILE[instr->m_rs3];
-}
-void do_addi(CPU *cpu, Instr *instr) {
-  instr->dump();
-  cpu->REG_FILE[instr->m_rs1] = cpu->REG_FILE[instr->m_rs2] + instr->m_imm;
-}
-void do_subi(CPU *cpu, Instr *instr) {
-  instr->dump();
-  cpu->REG_FILE[instr->m_rs1] = cpu->REG_FILE[instr->m_rs2] - instr->m_imm;
-}
-void do_muli(CPU *cpu, Instr *instr) {
-  instr->dump();
-  cpu->REG_FILE[instr->m_rs1] = cpu->REG_FILE[instr->m_rs2] * instr->m_imm;
-}
-void do_divi(CPU *cpu, Instr *instr) {
-  instr->dump();
-  cpu->REG_FILE[instr->m_rs1] = cpu->REG_FILE[instr->m_rs2] / instr->m_imm;
-}
-void do_b(CPU *cpu, Instr *instr) {
-  instr->dump();
-  cpu->NEXT_PC = instr->m_imm;
-}
-void do_ret(CPU *cpu, Instr *instr) {
-  instr->dump();
-  if (!cpu->call_stack_ok()) {
-    return;
-  }
-  cpu->NEXT_PC = cpu->CALL_STACK.top();
-  cpu->CALL_STACK.pop();
-}
-void do_bl(CPU *cpu, Instr *instr) {
-  instr->dump();
-  cpu->CALL_STACK.push(cpu->PC + 1);
-  cpu->NEXT_PC = instr->m_imm;
-}
-void do_beq(CPU *cpu, Instr *instr) {
-  instr->dump();
-  if (cpu->REG_FILE[instr->m_rs1] == cpu->REG_FILE[instr->m_rs2])
-    cpu->NEXT_PC = instr->m_imm;
-}
-void do_bne(CPU *cpu, Instr *instr) {
-  instr->dump();
-  if (cpu->REG_FILE[instr->m_rs1] != cpu->REG_FILE[instr->m_rs2])
-    cpu->NEXT_PC = instr->m_imm;
-}
-void do_bge(CPU *cpu, Instr *instr) {
-  instr->dump();
-  if (cpu->REG_FILE[instr->m_rs1] >= cpu->REG_FILE[instr->m_rs2])
-    cpu->NEXT_PC = instr->m_imm;
-}
-void do_blt(CPU *cpu, Instr *instr) {
-  instr->dump();
-  if (cpu->REG_FILE[instr->m_rs1] < cpu->REG_FILE[instr->m_rs2])
-    cpu->NEXT_PC = instr->m_imm;
-}
-void do_read(CPU *cpu, Instr *instr) {
-  instr->dump();
-  outs() << "[x" << (uint32_t) instr->m_rs1 << "] = ";
-  std::cin >> cpu->REG_FILE[instr->m_rs1];
-}
-void do_write(CPU *cpu, Instr *instr) {
-  instr->dump();
-  outs() << "[x" << (uint32_t) instr->m_rs1
-         << "] = " << cpu->REG_FILE[instr->m_rs1] << '\n';
-}
 
 namespace asm_repr {
 
+using RegVal_t = uint32_t;
 using RegId_t = uint8_t;
 using Bits_t = uint8_t;
 
@@ -296,7 +34,11 @@ struct RegValue {
   RegId_t reg_id;
 };
 
-using Value = std::variant<uint8_t, uint16_t, uint32_t, uint64_t, int8_t, int16_t, int32_t, int64_t, RegValue>;
+struct ImmValue {
+  uint64_t value;
+};
+
+using Value = std::variant<ImmValue, RegValue>;
 
 namespace {
 struct ParseError : std::runtime_error {
@@ -332,14 +74,15 @@ Value parseNumberOrRegValue(std::string_view sv, size_t bits) {
     return RegValue{parseNumber<RegId_t>(sv.substr(1))};
   }
   auto n = parseNumber<uint64_t>(sv);
-  if (bits == 8) {
-    return (uint8_t) n;
-  } else if (bits == 16) {
-    return (uint16_t) n;
-  } else if (bits == 32) {
-    return (uint32_t) n;
-  }
-  return n;
+  return ImmValue{n};
+  // if (bits == 8) {
+  //   return (uint8_t) n;
+  // } else if (bits == 16) {
+  //   return (uint16_t) n;
+  // } else if (bits == 32) {
+  //   return (uint32_t) n;
+  // }
+  // return n;
 }
 
 std::string_view removeSpaces(std::string_view v) {
@@ -394,8 +137,18 @@ std::string_view &expectString(std::string_view &s, const char *expected) {
 }
 }// namespace
 
+struct Function;
+
+constexpr inline size_t kIsaRegFileSize = 16;
+constexpr inline std::string kRegFileName = "regFile";
+
+template<size_t REG_FILE_SIZE = kIsaRegFileSize>
+struct Registers {
+  std::array<RegVal_t, REG_FILE_SIZE> REG_FILE = {};
+};
+
 struct Instruction {
-  virtual void translateToIR(llvm::IRBuilder<>&) = 0;
+  virtual void translateToIR(llvm::Module &module, llvm::IRBuilder<> &builder, Function &f) = 0;
   virtual ~Instruction() = default;
 };
 
@@ -407,8 +160,23 @@ struct AddInstruction : Instruction {
   RegValue arg1_reg;
   Value arg2;
 
-  void translateToIR(llvm::IRBuilder<>& builder) override {
-    
+  AddInstruction(Bits_t bits_, RegValue res, RegValue arg1, Value arg2_)
+      : bits(bits_), res_reg(res), arg1_reg(arg1), arg2(arg2_) {}
+
+  void translateToIR(llvm::Module &module, llvm::IRBuilder<> &builder, Function &) override {
+    auto *regs = module.getGlobalVariable(kRegFileName);
+    auto *arg1_ir = builder.CreateConstGEP2_32(regs->getValueType(), regs, 0, arg1_reg.reg_id);
+    auto *arg2_ir = std::visit(boost::hana::overload(
+                                   [&](ImmValue v) {
+                                     // TODO: think about different int types
+                                     return static_cast<llvm::Value *>(builder.getInt32(v.value));
+                                   },
+                                   [&](RegValue v) {
+                                     return builder.CreateConstGEP2_32(regs->getValueType(), regs, 0, v.reg_id);
+                                   }),
+                               arg2);
+    auto *res_ir = builder.CreateConstGEP2_32(regs->getValueType(), regs, 0, res_reg.reg_id);
+    builder.CreateStore(builder.CreateAdd(arg1_ir, arg2_ir), res_ir);
   }
 
   static AddInstructionPtr parse(std::string_view &in) {
@@ -421,22 +189,74 @@ struct AddInstruction : Instruction {
     in = removeSpaces(in);
     auto arg2 = consumeUntilWhitespace(in);
     auto bits = parseNumber<Bits_t>(bits_sv);
-    return std::make_unique<AddInstruction>(AddInstruction{
-        .bits = bits,
-        .res_reg = RegValue{parseNumber<RegId_t>(res)},
-        .arg1_reg = RegValue{parseNumber<RegId_t>(arg1)},
-        .arg2 = parseNumberOrRegValue(arg2, bits)});
+    return std::make_unique<AddInstruction>(
+        bits,
+        RegValue{parseNumber<RegId_t>(res)},
+        RegValue{parseNumber<RegId_t>(arg1)},
+        parseNumberOrRegValue(arg2, bits));
   }
 
-  ~AddInstruction() = default;
+  ~AddInstruction() override = default;
+};
+
+struct MulInstruction : Instruction {
+  using MulInstructionPtr = std::unique_ptr<MulInstruction>;
+
+  Bits_t bits;
+  RegValue res_reg;
+  RegValue arg1_reg;
+  Value arg2;
+
+  MulInstruction(Bits_t bits_, RegValue res, RegValue arg1, Value arg2_)
+      : bits(bits_), res_reg(res), arg1_reg(arg1), arg2(arg2_) {}
+
+  static MulInstructionPtr parse(std::string_view &in) {
+    in = removeSpaces(in);
+    auto bits_sv = consumeUntilWhitespace(in);
+    in = removeSpaces(in);
+    auto res = consumeUntilWhitespace(in);
+    in = removeSpaces(in);
+    auto arg1 = consumeUntilWhitespace(in);
+    in = removeSpaces(in);
+    auto arg2 = consumeUntilWhitespace(in);
+    auto bits = parseNumber<Bits_t>(bits_sv);
+    return std::make_unique<MulInstruction>(
+        bits,
+        RegValue{parseNumber<RegId_t>(res)},
+        RegValue{parseNumber<RegId_t>(arg1)},
+        parseNumberOrRegValue(arg2, bits));
+  }
+
+  void translateToIR(llvm::Module &module, llvm::IRBuilder<> &builder, Function &) override {
+    auto *regs = module.getGlobalVariable(kRegFileName);
+    auto *arg1_ir = builder.CreateConstGEP2_32(regs->getValueType(), regs, 0, arg1_reg.reg_id);
+    auto *arg2_ir = std::visit(boost::hana::overload(
+                                   [&](ImmValue v) {
+                                     // TODO: think about different int types
+                                     return static_cast<llvm::Value *>(builder.getInt32(v.value));
+                                   },
+                                   [&](RegValue v) {
+                                     return builder.CreateConstGEP2_32(regs->getValueType(), regs, 0, v.reg_id);
+                                   }),
+                               arg2);
+    auto *res_ir = builder.CreateConstGEP2_32(regs->getValueType(), regs, 0, res_reg.reg_id);
+    builder.CreateStore(builder.CreateMul(arg1_ir, arg2_ir), res_ir);
+  }
+
+  ~MulInstruction() override = default;
 };
 
 struct MovInstruction : Instruction {
+  using MovInstructionPtr = std::unique_ptr<MovInstruction>;
+
   Bits_t bits;
   RegValue res_reg;
   Value arg1;
 
-  static MovInstruction parse(std::string_view &in) {
+  MovInstruction(Bits_t bits_, RegValue res, Value arg1_)
+      : bits(bits_), res_reg(res), arg1(arg1_) {}
+
+  static MovInstructionPtr parse(std::string_view &in) {
     in = removeSpaces(in);
     auto bits_sv = consumeUntilWhitespace(in);
     in = removeSpaces(in);
@@ -444,27 +264,67 @@ struct MovInstruction : Instruction {
     in = removeSpaces(in);
     auto arg1 = consumeUntilWhitespace(in);
     auto bits = parseNumber<Bits_t>(bits_sv);
-    return {
-        .bits = bits,
-        .res_reg = RegValue{parseNumber<RegId_t>(res)},
-        .arg1 = parseNumberOrRegValue(arg1, bits)};
+    return std::make_unique<MovInstruction>(
+        bits,
+        RegValue{parseNumber<RegId_t>(res)},
+        parseNumberOrRegValue(arg1, bits));
   }
+
+  void translateToIR(llvm::Module &module, llvm::IRBuilder<> &builder, Function &) override {
+    auto *regs = module.getGlobalVariable(kRegFileName);
+    auto *arg1_ir = std::visit(boost::hana::overload(
+                                   [&](ImmValue v) {
+                                     // TODO: think about different int types
+                                     return static_cast<llvm::Value *>(builder.getInt32(v.value));
+                                   },
+                                   [&](RegValue v) {
+                                     return builder.CreateConstGEP2_32(regs->getValueType(), regs, 0, v.reg_id);
+                                   }),
+                               arg1);
+    auto *res_ir = builder.CreateConstGEP2_32(regs->getValueType(), regs, 0, res_reg.reg_id);
+    builder.CreateStore(arg1_ir, res_ir);
+  }
+
+  ~MovInstruction() override = default;
 };
 
 struct RetInstruction : Instruction {
+  using RetInstructionPtr = std::unique_ptr<RetInstruction>;
+
   Bits_t bits;
   Value arg1;
 
-  static RetInstruction parse(std::string_view &in) {
+  RetInstruction(Bits_t bits_, Value arg1_)
+      : bits(bits_), arg1(arg1_) {}
+
+  static RetInstructionPtr parse(std::string_view &in) {
     in = removeSpaces(in);
     auto bits_sv = consumeUntilWhitespace(in);
     in = removeSpaces(in);
+    auto res = consumeUntilWhitespace(in);
+    in = removeSpaces(in);
     auto arg1 = consumeUntilWhitespace(in);
     auto bits = parseNumber<Bits_t>(bits_sv);
-    return {
-        .bits = bits,
-        .arg1 = parseNumberOrRegValue(arg1, bits)};
+    return std::make_unique<RetInstruction>(
+        bits,
+        parseNumberOrRegValue(arg1, bits));
   }
+
+  void translateToIR(llvm::Module &module, llvm::IRBuilder<> &builder, Function &) override {
+    auto *regs = module.getGlobalVariable(kRegFileName);
+    auto *arg1_ir = std::visit(boost::hana::overload(
+                                   [&](ImmValue v) {
+                                     // TODO: think about different int types
+                                     return static_cast<llvm::Value *>(builder.getInt32(v.value));
+                                   },
+                                   [&](RegValue v) {
+                                     return builder.CreateConstGEP2_32(regs->getValueType(), regs, 0, v.reg_id);
+                                   }),
+                               arg1);
+    builder.CreateRet(arg1_ir);
+  }
+
+  ~RetInstruction() override = default;
 };
 
 struct BasicBlock : public boost::intrusive::list_base_hook<>, public boost::intrusive::unordered_set_base_hook<> {
@@ -486,11 +346,13 @@ struct BasicBlock : public boost::intrusive::list_base_hook<>, public boost::int
         return bb;
       }
       if (label == "add") {
-        bb->instrs.push_back(std::make_unique<AddInstruction>(AddInstruction::parse(in)));
+        bb->instrs.push_back(AddInstruction::parse(in));
+      } else if (label == "mul") {
+        bb->instrs.push_back(MulInstruction::parse(in));
       } else if (label == "mov") {
-        bb->instrs.push_back(std::make_unique<MovInstruction>(MovInstruction::parse(in)));
+        bb->instrs.push_back(MovInstruction::parse(in));
       } else if (label == "ret") {
-        bb->instrs.push_back(std::make_unique<RetInstruction>(RetInstruction::parse(in)));
+        bb->instrs.push_back(RetInstruction::parse(in));
       } else {
         throw std::runtime_error(std::format("Unknown instruction {}", label.data()));
       }
