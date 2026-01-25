@@ -1,4 +1,3 @@
-
 if (LLVM_COURSE_ITMO_USE_CONAN)
     find_package(SFML 3.0 COMPONENTS system window graphics REQUIRED)
 else ()

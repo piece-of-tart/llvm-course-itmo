@@ -6,11 +6,16 @@
 #include <ostream>
 #include <stack>
 
+namespace cpu_emul {
+
 using RegId_t = uint8_t;
+
 using RegVal_t = uint32_t;
 using Stack_t = std::stack<RegVal_t>;
 
-template<size_t REG_FILE_SIZE>
+constexpr inline size_t kIsaRegFileSize = 16;
+
+template<size_t REG_FILE_SIZE = kIsaRegFileSize>
 class CPU {
  public:
   std::array<RegVal_t, REG_FILE_SIZE> REG_FILE = {};
@@ -19,9 +24,9 @@ class CPU {
   Stack_t call_stack;
   Stack_t stack;
   uint32_t run{0};
-  std::ostream &out; // NOLINT
+  std::ostream &out;// NOLINT
 
-public:
+ public:
   bool isStackOk() {
     if (stack.empty()) {
       run = 0;
@@ -31,7 +36,7 @@ public:
     return true;
   }
 
-  bool call_stack_ok() {
+  bool isCallStackOk() {
     if (stack.empty()) {
       run = 0;
       out << "[RUNTIME ERROR] CALL STACK ERROR\n";
@@ -40,3 +45,5 @@ public:
     return true;
   }
 };
+
+}// namespace cpu_emul

@@ -26,6 +26,8 @@
 - movzx reg, mem
 
 - call mem, regs (arguments)
+- ret reg
+- ret imm
 - ret
 
 - cmp reg, reg
@@ -33,3 +35,7 @@
 - jmp mem
 - je mem
 - jne mem
+
+
+Правила
+1. В начале базового блока всегда должна быть метка

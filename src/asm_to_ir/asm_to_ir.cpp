@@ -1,51 +1,56 @@
+#include <llvm/ExecutionEngine/ExecutionEngine.h>
+#include <llvm/ExecutionEngine/GenericValue.h>
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Verifier.h>
+#include <llvm/Support/TargetSelect.h>
+#include <llvm/Support/raw_ostream.h>
+
+#include <boost/intrusive/list.hpp>
+#include <boost/intrusive/unordered_set.hpp>
+
 #include <fstream>
 #include <iostream>
 #include <memory>
 #include <stack>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
-#include "llvm/ExecutionEngine/ExecutionEngine.h"
-#include "llvm/ExecutionEngine/GenericValue.h"
-#include "llvm/IR/IRBuilder.h"
-#include "llvm/IR/LLVMContext.h"
-#include "llvm/IR/Module.h"
-#include "llvm/IR/Verifier.h"
-#include "llvm/Support/TargetSelect.h"
-#include "llvm/Support/raw_ostream.h"
-using namespace llvm;
+// using namespace llvm;
 
 //////////////////////////////
 // All instructions
 //////////////////////////////
 
 enum InsnId_t {
-  EXIT,  // 0
-  PUSH,  // imm
-  POP,   // 1r
-  ADD_S, // 0
-  SUB_S, // 0
-  MUL_S, // 0
-  DIV_S, // 0
-  NEG,   // 1r
-  ADD,   // 3r
-  SUB,   // 3r
-  MUL,   // 3r
-  DIV,   // 3r
-  ADDI,  // 2r imm
-  SUBI,  // 2r imm
-  MULI,  // 2r imm
-  DIVI,  // 2r imm
-  B,     // imm
-  RET,   // 0
-  BL,    // imm
-  BEQ,   // 2r imm
-  BNE,   // 2r imm
-  BGE,   // 2r imm
-  BLT,   // 2r imm
-  READ,  // 1r
-  WRITE  // 1r
+  EXIT, // 0
+  PUSH, // imm
+  POP,  // 1r
+  ADD_S,// 0
+  SUB_S,// 0
+  MUL_S,// 0
+  DIV_S,// 0
+  NEG,  // 1r
+  ADD,  // 3r
+  SUB,  // 3r
+  MUL,  // 3r
+  DIV,  // 3r
+  ADDI, // 2r imm
+  SUBI, // 2r imm
+  MULI, // 2r imm
+  DIVI, // 2r imm
+  B,    // imm
+  RET,  // 0
+  BL,   // imm
+  BEQ,  // 2r imm
+  BNE,  // 2r imm
+  BGE,  // 2r imm
+  BLT,  // 2r imm
+  READ, // 1r
+  WRITE // 1r
 };
 
 //////////////////////////////
@@ -58,7 +63,7 @@ using Stack_t = std::stack<RegVal_t>;
 
 const int REG_FILE_SIZE = 4;
 class CPU {
-public:
+ public:
   RegVal_t REG_FILE[REG_FILE_SIZE] = {};
   RegVal_t PC;
   RegVal_t NEXT_PC;
@@ -88,7 +93,7 @@ public:
 //////////////////////////////
 
 class Instr {
-public:
+ public:
   InsnId_t m_ID;
   void (*m_INSTR)(CPU *, Instr *);
   RegId_t m_rs1;
@@ -114,8 +119,7 @@ public:
         m_imm(imm) {}
   void dump() { outs() << m_name << '\n'; }
   bool isCFI() {
-    return m_ID == EXIT || m_ID == B || m_ID == RET || m_ID == BL ||
-           m_ID == BEQ || m_ID == BNE || m_ID == BGE || m_ID == BLT;
+    return m_ID == EXIT || m_ID == B || m_ID == RET || m_ID == BL || m_ID == BEQ || m_ID == BNE || m_ID == BGE || m_ID == BLT;
   }
 };
 
@@ -274,507 +278,264 @@ void do_blt(CPU *cpu, Instr *instr) {
 }
 void do_read(CPU *cpu, Instr *instr) {
   instr->dump();
-  outs() << "[x" << (uint32_t)instr->m_rs1 << "] = ";
+  outs() << "[x" << (uint32_t) instr->m_rs1 << "] = ";
   std::cin >> cpu->REG_FILE[instr->m_rs1];
 }
 void do_write(CPU *cpu, Instr *instr) {
   instr->dump();
-  outs() << "[x" << (uint32_t)instr->m_rs1
+  outs() << "[x" << (uint32_t) instr->m_rs1
          << "] = " << cpu->REG_FILE[instr->m_rs1] << '\n';
 }
 
-void *lazyFunctionCreator(const std::string &fnName) {
-  if (fnName == "do_exit") {
-    return reinterpret_cast<void *>(do_exit);
+namespace asm_repr {
+
+using RegId_t = uint8_t;
+using Bits_t = uint8_t;
+
+struct RegValue {
+  RegId_t reg_id;
+};
+
+using Value = std::variant<uint8_t, uint16_t, uint32_t, uint64_t, int8_t, int16_t, int32_t, int64_t, RegValue>;
+
+namespace {
+struct ParseError : std::runtime_error {
+  using std::runtime_error::runtime_error;
+};
+
+template<typename T>
+T parseNumber(std::string_view sv, int base = 10) {
+  if (sv.empty())
+    throw ParseError("parseNumber: empty input");
+
+  if constexpr (std::is_integral_v<T> && !std::is_same_v<T, bool>) {
+    T value{};
+    auto first = sv.data();
+    auto last = sv.data() + sv.size();
+
+    auto [ptr, ec] = std::from_chars(first, last, value, base);
+    if (ec == std::errc::invalid_argument)
+      throw ParseError("parseNumber: invalid integer");
+    if (ec == std::errc::result_out_of_range)
+      throw ParseError("parseNumber: integer out of range");
+    if (ptr != last)
+      throw ParseError("parseNumber: trailing characters");
+
+    return value;
+  } else {
+    static_assert(!sizeof(T), "parseNumber<T>: T must be an integral (non-bool)");
   }
-  if (fnName == "do_push") {
-    return reinterpret_cast<void *>(do_push);
-  }
-  if (fnName == "do_pop") {
-    return reinterpret_cast<void *>(do_pop);
-  }
-  if (fnName == "do_add_s") {
-    return reinterpret_cast<void *>(do_add_s);
-  }
-  if (fnName == "do_sub_s") {
-    return reinterpret_cast<void *>(do_sub_s);
-  }
-  if (fnName == "do_mul_s") {
-    return reinterpret_cast<void *>(do_mul_s);
-  }
-  if (fnName == "do_div_s") {
-    return reinterpret_cast<void *>(do_div_s);
-  }
-  if (fnName == "do_neg") {
-    return reinterpret_cast<void *>(do_neg);
-  }
-  if (fnName == "do_add") {
-    return reinterpret_cast<void *>(do_add);
-  }
-  if (fnName == "do_sub") {
-    return reinterpret_cast<void *>(do_sub);
-  }
-  if (fnName == "do_mul") {
-    return reinterpret_cast<void *>(do_mul);
-  }
-  if (fnName == "do_div") {
-    return reinterpret_cast<void *>(do_div);
-  }
-  if (fnName == "do_addi") {
-    return reinterpret_cast<void *>(do_addi);
-  }
-  if (fnName == "do_subi") {
-    return reinterpret_cast<void *>(do_subi);
-  }
-  if (fnName == "do_muli") {
-    return reinterpret_cast<void *>(do_muli);
-  }
-  if (fnName == "do_divi") {
-    return reinterpret_cast<void *>(do_divi);
-  }
-  if (fnName == "do_b") {
-    return reinterpret_cast<void *>(do_b);
-  }
-  if (fnName == "do_ret") {
-    return reinterpret_cast<void *>(do_ret);
-  }
-  if (fnName == "do_bl") {
-    return reinterpret_cast<void *>(do_bl);
-  }
-  if (fnName == "do_beq") {
-    return reinterpret_cast<void *>(do_beq);
-  }
-  if (fnName == "do_bne") {
-    return reinterpret_cast<void *>(do_bne);
-  }
-  if (fnName == "do_bge") {
-    return reinterpret_cast<void *>(do_bge);
-  }
-  if (fnName == "do_blt") {
-    return reinterpret_cast<void *>(do_blt);
-  }
-  if (fnName == "do_read") {
-    return reinterpret_cast<void *>(do_read);
-  }
-  if (fnName == "do_write") {
-    return reinterpret_cast<void *>(do_write);
-  }
-  outs() << "[ExecutionEngine] Can't find function " << fnName
-          << ". Catch the Segmentation fault:)\n";
-  return nullptr;
 }
 
-//////////////////////////////
-// MAIN
-//////////////////////////////
+Value parseNumberOrRegValue(std::string_view sv, size_t bits) {
+  if (sv[0] == 'r') {
+    return RegValue{parseNumber<RegId_t>(sv.substr(1))};
+  }
+  auto n = parseNumber<uint64_t>(sv);
+  if (bits == 8) {
+    return (uint8_t) n;
+  } else if (bits == 16) {
+    return (uint16_t) n;
+  } else if (bits == 32) {
+    return (uint32_t) n;
+  }
+  return n;
+}
+
+std::string_view removeSpaces(std::string_view v) {
+  auto is_space = [](unsigned char c) { return std::isspace(c); };
+
+  while (!v.empty() && is_space(v.front())) v.remove_prefix(1);
+  return v;
+}
+
+std::string_view takeUntil(std::string_view s, char delim) {
+  auto pos = s.find(delim);
+  return (pos == std::string_view::npos) ? s : s.substr(0, pos);
+}
+
+std::string_view getTokenUntilWhitespace(std::string_view s) {
+  size_t i = 0;
+  while (i < s.size() && !std::isspace((unsigned char) s[i])) ++i;
+  std::string_view tok = s.substr(0, i);
+  s.remove_prefix(i);
+  while (!s.empty() && std::isspace((unsigned char) s.front()))
+    s.remove_prefix(1);
+
+  return tok;
+}
+
+std::string_view consumeUntilWhitespace(std::string_view &s) {
+  size_t i = 0;
+  while (i < s.size() && !std::isspace((unsigned char) s[i])) ++i;
+  std::string_view tok = s.substr(0, i);
+  s.remove_prefix(i);
+  while (!s.empty() && std::isspace((unsigned char) s.front()))
+    s.remove_prefix(1);
+
+  return tok;
+}
+
+std::string_view &expectSymbol(std::string_view &s, char expected) {
+  if (s.at(0) == expected) {
+    s.remove_prefix(1);
+    return s;
+  }
+  throw std::runtime_error(std::format("Expected '{}' but get '{}' here: \"{}\"", expected, s[0], s.substr(0, 10).data()));
+}
+
+std::string_view &expectString(std::string_view &s, const char *expected) {
+  size_t len = strlen(expected);
+  if (s.substr(0, len) == expected) {
+    s.remove_prefix(len);
+    return s;
+  }
+  throw std::runtime_error(std::format("Expected '{}' but get '{}' here: \"{}\"", expected, s.substr(0, len), s.substr(0, len + 10).data()));
+}
+}// namespace
+
+struct Instruction {
+  virtual void translateToIR(llvm::IRBuilder<>&) = 0;
+  virtual ~Instruction() = default;
+};
+
+struct AddInstruction : Instruction {
+  using AddInstructionPtr = std::unique_ptr<AddInstruction>;
+
+  Bits_t bits;
+  RegValue res_reg;
+  RegValue arg1_reg;
+  Value arg2;
+
+  void translateToIR(llvm::IRBuilder<>& builder) override {
+    
+  }
+
+  static AddInstructionPtr parse(std::string_view &in) {
+    in = removeSpaces(in);
+    auto bits_sv = consumeUntilWhitespace(in);
+    in = removeSpaces(in);
+    auto res = consumeUntilWhitespace(in);
+    in = removeSpaces(in);
+    auto arg1 = consumeUntilWhitespace(in);
+    in = removeSpaces(in);
+    auto arg2 = consumeUntilWhitespace(in);
+    auto bits = parseNumber<Bits_t>(bits_sv);
+    return std::make_unique<AddInstruction>(AddInstruction{
+        .bits = bits,
+        .res_reg = RegValue{parseNumber<RegId_t>(res)},
+        .arg1_reg = RegValue{parseNumber<RegId_t>(arg1)},
+        .arg2 = parseNumberOrRegValue(arg2, bits)});
+  }
+
+  ~AddInstruction() = default;
+};
+
+struct MovInstruction : Instruction {
+  Bits_t bits;
+  RegValue res_reg;
+  Value arg1;
+
+  static MovInstruction parse(std::string_view &in) {
+    in = removeSpaces(in);
+    auto bits_sv = consumeUntilWhitespace(in);
+    in = removeSpaces(in);
+    auto res = consumeUntilWhitespace(in);
+    in = removeSpaces(in);
+    auto arg1 = consumeUntilWhitespace(in);
+    auto bits = parseNumber<Bits_t>(bits_sv);
+    return {
+        .bits = bits,
+        .res_reg = RegValue{parseNumber<RegId_t>(res)},
+        .arg1 = parseNumberOrRegValue(arg1, bits)};
+  }
+};
+
+struct RetInstruction : Instruction {
+  Bits_t bits;
+  Value arg1;
+
+  static RetInstruction parse(std::string_view &in) {
+    in = removeSpaces(in);
+    auto bits_sv = consumeUntilWhitespace(in);
+    in = removeSpaces(in);
+    auto arg1 = consumeUntilWhitespace(in);
+    auto bits = parseNumber<Bits_t>(bits_sv);
+    return {
+        .bits = bits,
+        .arg1 = parseNumberOrRegValue(arg1, bits)};
+  }
+};
+
+struct BasicBlock : public boost::intrusive::list_base_hook<>, public boost::intrusive::unordered_set_base_hook<> {
+ public:
+  using BasicBlockPtr = std::unique_ptr<BasicBlock>;
+  using BasicBlockId = uint32_t;
+
+  static BasicBlockPtr parse(std::string_view in) {
+    auto bb = std::make_unique<BasicBlock>();
+    while (true) {
+      in = removeSpaces(in);
+      auto label = getTokenUntilWhitespace(in);
+      if (in[label.size()] == ':') {
+        // read next function
+        return bb;
+      }
+      if (label.at(0) == '.') {
+        // read next basic block
+        return bb;
+      }
+      if (label == "add") {
+        bb->instrs.push_back(std::make_unique<AddInstruction>(AddInstruction::parse(in)));
+      } else if (label == "mov") {
+        bb->instrs.push_back(std::make_unique<MovInstruction>(MovInstruction::parse(in)));
+      } else if (label == "ret") {
+        bb->instrs.push_back(std::make_unique<RetInstruction>(RetInstruction::parse(in)));
+      } else {
+        throw std::runtime_error(std::format("Unknown instruction {}", label.data()));
+      }
+    }
+  }
+
+  std::vector<std::unique_ptr<Instruction>> instrs;
+};
+
+struct Function {
+  using FunctionPtr = std::unique_ptr<Function>;
+
+  static FunctionPtr parse(std::string_view &in) {
+    auto f = std::make_unique<Function>();
+    while (true) {
+      in = removeSpaces(in);
+      if (in.at(0) == '.') {
+        expectSymbol(in, '.');
+        auto label = consumeUntilWhitespace(in);
+        f->bbs[std::string(label)] = BasicBlock::parse(in);
+      } else {
+        break;
+      }
+    }
+    return f;
+  }
+
+  std::unordered_map<std::string, std::unique_ptr<BasicBlock>> bbs;
+};
+
+class Parser {
+ public:
+  void parse(std::string_view input) {
+    while (!input.empty()) {
+      input = removeSpaces(input);
+      auto function_name = takeUntil(input, ':');
+      functions[std::string(function_name)] = Function::parse(input);
+    }
+  }
+
+ private:
+  std::unordered_map<std::string, std::unique_ptr<Function>> functions;
+};
+
+}// namespace asm_repr
 
 int main(int argc, char *argv[]) {
-  if (argc != 2) {
-    outs() << "[ERROR] Need 1 argument: file with assembler\n";
-    return 1;
-  }
-  std::ifstream input;
-  input.open(argv[1]);
-  if (!input.is_open()) {
-    outs() << "[ERROR] Can't open " << argv[1] << '\n';
-    return 1;
-  }
-
-  std::string name;
-  std::string arg;
-  std::unordered_map<std::string, RegVal_t> BB_PC;
-
-  outs() << "\n[FILE]:\nBBs:";
-  RegVal_t pc = 1;
-  while (input >> name) {
-    // 3 args
-    if (!name.compare("add") || !name.compare("addi") || !name.compare("mul") ||
-        !name.compare("muli") || !name.compare("bne")) {
-      input >> arg >> arg >> arg;
-      pc++;
-      continue;
-    }
-    // 1 arg
-    if (!name.compare("b") || !name.compare("read") || !name.compare("write")) {
-      input >> arg;
-      pc++;
-      continue;
-    }
-    // 0 args
-    if (!name.compare("exit") || !name.compare("sort")) {
-      pc++;
-      continue;
-    }
-
-    outs() << " " << name << "(" << pc << ")";
-    BB_PC[name] = pc;
-  }
-  outs() << '\n';
-  input.close();
-  input.open(argv[1]);
-
-  std::string arg1;
-  std::string arg2;
-  std::string arg3;
-  std::vector<Instr *> Instructions;
-  Instructions.push_back(
-      new Instr(InsnId_t::EXIT, do_exit, "[RUNTIME ERROR] Segmentation fault"));
-  // Read instruction from file
-  outs() << "[FILE] BEGIN\n";
-  while (input >> name) {
-    outs() << name;
-    // 0 registers
-    if (!name.compare("exit")) {
-      Instructions.push_back(new Instr(InsnId_t::EXIT, do_exit, name));
-      outs() << '\n';
-      continue;
-    }
-    if (!name.compare("ret")) {
-      Instructions.push_back(new Instr(InsnId_t::RET, do_ret, name));
-      outs() << '\n';
-      continue;
-    }
-    if (!name.compare("add_s")) {
-      Instructions.push_back(new Instr(InsnId_t::ADD_S, do_add_s, name));
-      outs() << '\n';
-      continue;
-    }
-    if (!name.compare("sub_s")) {
-      Instructions.push_back(new Instr(InsnId_t::SUB_S, do_sub_s, name));
-      outs() << '\n';
-      continue;
-    }
-    if (!name.compare("mul_s")) {
-      Instructions.push_back(new Instr(InsnId_t::MUL_S, do_mul_s, name));
-      outs() << '\n';
-      continue;
-    }
-    if (!name.compare("div_s")) {
-      Instructions.push_back(new Instr(InsnId_t::DIV_S, do_div_s, name));
-      outs() << '\n';
-      continue;
-    }
-
-    // 3 registers
-    if (!name.compare("add") || !name.compare("sub") || !name.compare("mul") ||
-        !name.compare("div")) {
-      input >> arg1 >> arg2 >> arg3;
-      outs() << " " << arg1 << " " << arg2 << " " << arg3 << '\n';
-      RegId_t rs1 = stoi(arg1.substr(1));
-      RegId_t rs2 = stoi(arg2.substr(1));
-      RegId_t rs3 = stoi(arg3.substr(1));
-      if (!name.compare("add")) {
-        Instructions.push_back(
-            new Instr(InsnId_t::ADD, do_add, name, rs1, rs2, rs3));
-      }
-      if (!name.compare("sub")) {
-        Instructions.push_back(
-            new Instr(InsnId_t::SUB, do_sub, name, rs1, rs2, rs3));
-      }
-      if (!name.compare("mul")) {
-        Instructions.push_back(
-            new Instr(InsnId_t::MUL, do_mul, name, rs1, rs2, rs3));
-      }
-      if (!name.compare("div")) {
-        Instructions.push_back(
-            new Instr(InsnId_t::DIV, do_div, name, rs1, rs2, rs3));
-      }
-      continue;
-    }
-
-    // 1 register
-    if (!name.compare("read") || !name.compare("write") ||
-        !name.compare("neg") || !name.compare("pop")) {
-      input >> arg1;
-      outs() << " " << arg1 << '\n';
-      RegId_t rs1 = stoi(arg1.substr(1));
-      if (!name.compare("read")) {
-        Instructions.push_back(new Instr(InsnId_t::READ, do_read, name, rs1));
-      }
-      if (!name.compare("write")) {
-        Instructions.push_back(new Instr(InsnId_t::WRITE, do_write, name, rs1));
-      }
-      if (!name.compare("neg")) {
-        Instructions.push_back(new Instr(InsnId_t::NEG, do_neg, name, rs1));
-      }
-      if (!name.compare("pop")) {
-        Instructions.push_back(new Instr(InsnId_t::POP, do_pop, name, rs1));
-      }
-      continue;
-    }
-
-    // 1 imm
-    if (!name.compare("b") || !name.compare("bl") || !name.compare("push")) {
-      input >> arg1;
-      outs() << " " << arg1 << '\n';
-      RegVal_t imm = stoi(arg1);
-      if (!name.compare("b")) {
-        Instructions.push_back(new Instr(InsnId_t::B, do_b, name, imm));
-      }
-      if (!name.compare("bl")) {
-        Instructions.push_back(new Instr(InsnId_t::BL, do_bl, name, imm));
-      }
-      if (!name.compare("push")) {
-        Instructions.push_back(new Instr(InsnId_t::PUSH, do_push, name, imm));
-      }
-      continue;
-    }
-
-    // 2 registers and imm
-    if (!name.compare("addi") || !name.compare("subi") ||
-        !name.compare("muli") || !name.compare("divi")) {
-      input >> arg1 >> arg2 >> arg3;
-      outs() << " " << arg1 << " " << arg2 << " " << arg3 << '\n';
-      RegId_t rs1 = stoi(arg1.substr(1));
-      RegId_t rs2 = stoi(arg2.substr(1));
-      RegVal_t imm = stoi(arg3);
-      if (!name.compare("addi")) {
-        Instructions.push_back(
-            new Instr(InsnId_t::ADDI, do_addi, name, rs1, rs2, imm));
-      }
-      if (!name.compare("subi")) {
-        Instructions.push_back(
-            new Instr(InsnId_t::SUBI, do_subi, name, rs1, rs2, imm));
-      }
-      if (!name.compare("muli")) {
-        Instructions.push_back(
-            new Instr(InsnId_t::MULI, do_muli, name, rs1, rs2, imm));
-      }
-      if (!name.compare("divi")) {
-        Instructions.push_back(
-            new Instr(InsnId_t::DIVI, do_divi, name, rs1, rs2, imm));
-      }
-      continue;
-    }
-
-    // 2 registers and label
-    if (!name.compare("beq") || !name.compare("bne") || !name.compare("bge") ||
-        !name.compare("blt")) {
-      input >> arg1 >> arg2 >> arg3;
-      outs() << " " << arg1 << " " << arg2 << " " << arg3 << '\n';
-      RegId_t rs1 = stoi(arg1.substr(1));
-      RegId_t rs2 = stoi(arg2.substr(1));
-      RegVal_t imm = BB_PC[arg3];
-      if (!name.compare("beq")) {
-        Instructions.push_back(
-            new Instr(InsnId_t::BEQ, do_beq, name, rs1, rs2, imm));
-      }
-      if (!name.compare("bne")) {
-        Instructions.push_back(
-            new Instr(InsnId_t::BNE, do_bne, name, rs1, rs2, imm));
-      }
-      if (!name.compare("bge")) {
-        Instructions.push_back(
-            new Instr(InsnId_t::BGE, do_bge, name, rs1, rs2, imm));
-      }
-      if (!name.compare("blt")) {
-        Instructions.push_back(
-            new Instr(InsnId_t::BLT, do_blt, name, rs1, rs2, imm));
-      }
-      continue;
-    }
-
-    if (BB_PC.find(name) == BB_PC.end()) {
-      outs() << "\n[ERROR] Unknown instruction: " << name << '\n';
-      Instructions.clear();
-      return 1;
-    }
-    outs() << '\n';
-  }
-  outs() << "[FILE] END\n";
-
-  // App simulation
-  outs() << "\n[EXEC] BEGIN\n";
-  CPU cpu;
-  for (int i = 0; i < REG_FILE_SIZE; i++) {
-    cpu.REG_FILE[i] = 0;
-  }
-  cpu.RUN = 1;
-  cpu.PC = 1;
-  // Loop execution
-  while (cpu.RUN) {
-    cpu.NEXT_PC = cpu.PC + 1;
-    Instructions[cpu.PC]->m_INSTR(&cpu, Instructions[cpu.PC]);
-    cpu.PC = cpu.NEXT_PC;
-  }
-  outs() << "[EXEC] END\n";
-
-  // Dump registers after simulation
-  for (int i = 0; i < REG_FILE_SIZE; i++) {
-    outs() << "[" << i << "] " << cpu.REG_FILE[i] << '\n';
-  }
-
-  // Build IR for application
-  LLVMContext context;
-  // ; ModuleID = 'top'
-  // source_filename = "top"
-  Module *module = new Module("top", context);
-  IRBuilder<> builder(context);
-
-  // declare void @main()
-  FunctionType *funcType = FunctionType::get(builder.getInt32Ty(), false);
-  Function *mainFunc =
-      Function::Create(funcType, Function::ExternalLinkage, "main", module);
-  // entry:
-  BasicBlock *entryBB = BasicBlock::Create(context, "entry", mainFunc);
-
-  builder.SetInsertPoint(entryBB);
-
-  // createCalleeFunctions(builder, module);
-  FunctionType *CalleeType = FunctionType::get(
-      builder.getVoidTy(),
-      ArrayRef<Type *>({builder.getInt64Ty(), builder.getInt64Ty()}), false);
-
-  // Get pointer to CPU for function args
-  Value *cpu_p = builder.getInt64((uint64_t)&cpu);
-  ArrayType *regFileType = ArrayType::get(builder.getInt32Ty(), REG_FILE_SIZE);
-  module->getOrInsertGlobal("regFile", regFileType);
-  GlobalVariable *regFile = module->getNamedGlobal("regFile");
-
-  std::unordered_map<RegVal_t, BasicBlock *> BBMap;
-
-  for (auto &name : BB_PC) {
-    BBMap[name.second] = BasicBlock::Create(context, name.first, mainFunc);
-  }
-
-  for (RegVal_t PC = 1; PC < Instructions.size(); PC++) {
-    // Set IRBuilder to current BB
-    if (BBMap.find(PC) != BBMap.end()) {
-      if (PC == 1 || !Instructions[PC - 1]->isCFI())
-        builder.CreateBr(BBMap[PC]);
-      builder.SetInsertPoint(BBMap[PC]);
-    }
-
-    /*
-    EXIT,  // 0
-    B,     // imm
-    BEQ,   // 2r imm
-    BNE,   // 2r imm
-    BGE,   // 2r imm
-    BLT,   // 2r imm
-    */
-    // IR implementation for EXIT instruction
-    if (Instructions[PC]->m_ID == EXIT) {
-      builder.CreateRet(builder.getInt32(0));
-      continue;
-    }
-    // IR implementation for B instruction
-    if (Instructions[PC]->m_ID == B) {
-      builder.CreateBr(BBMap[Instructions[PC]->m_imm]);
-      continue;
-    }
-    // IR implementation for COND B instruction
-    if (Instructions[PC]->m_ID == BEQ || Instructions[PC]->m_ID == BNE ||
-        Instructions[PC]->m_ID == BGE || Instructions[PC]->m_ID == BLT) {
-      // arg1
-      Value *arg1_p = builder.CreateConstGEP2_32(regFileType, regFile, 0,
-                                                 Instructions[PC]->m_rs1);
-      // arg2
-      Value *arg2_p = builder.CreateConstGEP2_32(regFileType, regFile, 0,
-                                                 Instructions[PC]->m_rs2);
-      Value *cond = nullptr;
-      switch (Instructions[PC]->m_ID) {
-      case BEQ:
-        cond = builder.CreateICmpEQ(
-            builder.CreateLoad(builder.getInt32Ty(), arg1_p),
-            builder.CreateLoad(builder.getInt32Ty(), arg2_p));
-        break;
-      case BNE:
-        cond = builder.CreateICmpNE(
-            builder.CreateLoad(builder.getInt32Ty(), arg1_p),
-            builder.CreateLoad(builder.getInt32Ty(), arg2_p));
-        break;
-      case BGE:
-        cond = builder.CreateICmpSGE(
-            builder.CreateLoad(builder.getInt32Ty(), arg1_p),
-            builder.CreateLoad(builder.getInt32Ty(), arg2_p));
-        break;
-      case BLT:
-        cond = builder.CreateICmpSLT(
-            builder.CreateLoad(builder.getInt32Ty(), arg1_p),
-            builder.CreateLoad(builder.getInt32Ty(), arg2_p));
-        break;
-      default:
-        break;
-      }
-      if (cond) {
-        builder.CreateCondBr(cond, BBMap[Instructions[PC]->m_imm],
-                             BBMap[PC + 1]);
-      }
-      continue;
-    }
-    /*
-    // IR implementation for ADD instruction
-    if (Instructions[PC]->m_ID == ADD) {
-      // res
-      Value *res_p = builder.CreateConstGEP2_32(regFileType, regFile, 0,
-                                                Instructions[PC]->m_rs1);
-      // arg1
-      Value *arg1_p = builder.CreateConstGEP2_32(regFileType, regFile, 0,
-                                                 Instructions[PC]->m_rs2);
-      // arg2
-      Value *arg2_p = builder.CreateConstGEP2_32(regFileType, regFile, 0,
-                                                 Instructions[PC]->m_rs3);
-      Value *add_arg1_arg2 =
-          builder.CreateAdd(builder.CreateLoad(builder.getInt32Ty(), arg1_p),
-                            builder.CreateLoad(builder.getInt32Ty(), arg2_p));
-      builder.CreateStore(add_arg1_arg2, res_p);
-      continue;
-    }
-    // IR implementation for ADD instruction
-    if (Instructions[PC]->m_ID == ADDI) {
-      // res
-      Value *res_p = builder.CreateConstGEP2_32(regFileType, regFile, 0,
-                                                Instructions[PC]->m_rs1);
-      // arg1
-      Value *arg1_p = builder.CreateConstGEP2_32(regFileType, regFile, 0,
-                                                 Instructions[PC]->m_rs2);
-      // arg2
-      Value *arg2 = builder.getInt32(Instructions[PC]->m_imm);
-      Value *add_arg1_arg2 = builder.CreateAdd(
-          builder.CreateLoad(builder.getInt32Ty(), arg1_p), arg2);
-      builder.CreateStore(add_arg1_arg2, res_p);
-      continue;
-    }
-    */
-    // Get pointer to instruction for function args
-    Value *instr_p = builder.getInt64((uint64_t)Instructions[PC]);
-    // Call simulation function for other instructions
-    builder.CreateCall(module->getOrInsertFunction(
-                           "do_" + Instructions[PC]->m_name, CalleeType),
-                       ArrayRef<Value *>({cpu_p, instr_p}));
-  }
-
-  outs() << "[LLVM IR] DUMP\n";
-  module->print(outs(), nullptr);
-  outs() << '\n';
-  bool verif = verifyFunction(*mainFunc, &outs());
-  outs() << "[VERIFICATION] " << (verif ? "FAIL\n\n" : "OK\n\n");
-  for (int i = 0; i < REG_FILE_SIZE; i++) {
-    cpu.REG_FILE[i] = 0;
-  }
-
-  // App simulation with execution engine
-  outs() << "[LLVM EE] RUN\n";
-  InitializeNativeTarget();
-  InitializeNativeTargetAsmPrinter();
-
-  ExecutionEngine *ee = EngineBuilder(std::unique_ptr<Module>(module)).create();
-  ee->InstallLazyFunctionCreator(lazyFunctionCreator);
-  ee->addGlobalMapping(regFile, (void *)cpu.REG_FILE);
-  ee->finalizeObject();
-  ArrayRef<GenericValue> noargs;
-
-  cpu.RUN = 1;
-  cpu.PC = 1;
-  ee->runFunction(mainFunc, noargs);
-  outs() << "[LLVM EE] END\n";
-
-  // Registers dump after simulation with EE
-  for (int i = 0; i < REG_FILE_SIZE; i++) {
-    outs() << "[" << i << "] " << cpu.REG_FILE[i] << '\n';
-  }
-
-  Instructions.clear();
-  return 0;
 }

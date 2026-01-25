@@ -10,6 +10,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 include(sfml)
+include(boost)
 find_package(LLVM 21.1 REQUIRED)
 
 add_subdirectory(src)

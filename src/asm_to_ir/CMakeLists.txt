@@ -13,4 +13,4 @@ llvm_map_components_to_libnames(LLVM_LIBS
   X86
   Interpreter
 )
-target_link_libraries(asm_to_ir PRIVATE sim ${LLVM_LIBS})
+target_link_libraries(asm_to_ir PRIVATE sim ${LLVM_LIBS} Boost::headers)
