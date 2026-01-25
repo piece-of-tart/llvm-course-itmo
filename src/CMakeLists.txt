@@ -7,3 +7,4 @@ endif()
 
 add_subdirectory(pass)
 add_subdirectory(ir_gen)
+add_subdirectory(asm_to_ir)
