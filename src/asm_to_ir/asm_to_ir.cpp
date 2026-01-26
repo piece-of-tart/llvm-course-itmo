@@ -152,6 +152,15 @@ struct PHILinker {
 
 constexpr inline size_t kIsaRegFileSize = 16;
 
+struct IRBasicBlock;
+
+struct IRInstruction {
+
+
+  llvm::Value *instr_ir = nullptr;
+  std::vector<llvm::Value *> phi_linked_instructions;
+};
+
 struct Instruction {
   explicit Instruction(BasicBlock *bb_) : bb(bb_) {}
 
@@ -162,15 +171,26 @@ struct Instruction {
   llvm::Value *findLatestRegUsageOrCreateNew(RegId_t reg_id, llvm::IRBuilder<> &builder, Module &m);
 
  public:
-  // fill when parse
   BasicBlock *bb;
-
-  // fill when translate to IR
-  llvm::Value *instr_ir = nullptr;
-  std::vector<llvm::Value *> phi_linked_instructions;
 };
 
-// struct
+struct BasicBlock;
+
+struct IRBasicBlock {
+public:
+  using IRBasicBlockPtr = std::unique_ptr<IRBasicBlock>;
+  using IRBasicBlockId = uint32_t;
+
+
+
+  
+public:
+  BasicBlock *parent_bb;
+  std::vector<IRBasicBlock *> pred;
+  std::vector<IRBasicBlock *> succ;
+  std::vector<std::optional<std::pair<RegId_t, Instruction *>>> result_registers; // fill instantly
+  std::vector<std::optional<std::pair<RegId_t, llvm::Value *>>> instruction_results; 
+};
 
 struct BasicBlock {
  public:
