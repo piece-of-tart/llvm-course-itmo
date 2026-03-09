@@ -156,7 +156,6 @@ struct IRBasicBlock;
 
 struct IRInstruction {
 
-
   llvm::Value *instr_ir = nullptr;
   std::vector<llvm::Value *> phi_linked_instructions;
 };
@@ -174,22 +173,33 @@ struct Instruction {
   BasicBlock *bb;
 };
 
+struct FlowChangingInstruction : Instruction {
+  FlowChangingInstruction(BasicBlock *bb, std::string to_label) : Instruction(bb), to_label(std::move(to_label)) {}
+
+ public:
+  std::string to_label;
+};
+
 struct BasicBlock;
 
 struct IRBasicBlock {
-public:
+ public:
   using IRBasicBlockPtr = std::unique_ptr<IRBasicBlock>;
   using IRBasicBlockId = uint32_t;
 
-
-
-  
-public:
+ public:
   BasicBlock *parent_bb;
   std::vector<IRBasicBlock *> pred;
   std::vector<IRBasicBlock *> succ;
-  std::vector<std::optional<std::pair<RegId_t, Instruction *>>> result_registers; // fill instantly
-  std::vector<std::optional<std::pair<RegId_t, llvm::Value *>>> instruction_results; 
+  std::vector<std::optional<std::pair<RegId_t, Instruction *>>> result_registers;// fill instantly
+  std::vector<std::optional<std::pair<RegId_t, llvm::Value *>>> instruction_results;
+};
+
+struct IRFunction {
+  using IRFunctionPtr = std::unique_ptr<IRFunction>;
+
+ public:
+  std::vector<std::unique_ptr<IRBasicBlock>> bbs;
 };
 
 struct BasicBlock {
@@ -252,7 +262,18 @@ struct BasicBlock {
     return result;
   }
 
+  void splitToIRBBs(std::unordered_map<std::string, IRBasicBlock::IRBasicBlockPtr> &ir_bbs) {
+    for (const auto &i : instrs) {
+      if (auto *flow_chng_i = dynamic_cast<FlowChangingInstruction *>(i.get()); flow_chng_i != nullptr) {
+        
+      } else {
+        
+      }
+    }
+  }
+
   // fill when parse
+  std::string name;
   std::vector<std::unique_ptr<Instruction>> instrs;
   std::vector<std::string> bb_succ_names;
   std::vector<std::optional<std::pair<RegId_t, Instruction *>>> result_registers;
@@ -283,6 +304,22 @@ struct Function {
     }
     f->setupBBsGraph();
     return f;
+  }
+
+  IRFunction::IRFunctionPtr toIRFunction() {
+    // Create all IR bbs
+    std::unordered_map<std::string, IRBasicBlock::IRBasicBlockPtr> ir_bbs;
+    for (const auto &[bb_name, bb_ptr] : bbs) {
+      ir_bbs[bb_name] = std::make_unique<IRBasicBlock>();
+    }
+    for (auto &bb : bbs_ordered) {
+      auto *ir_bb = ir_bbs[bb->name].get();
+      for (const auto &succ : bb->bb_succ_names) {
+        auto *ir_bb_succ = ir_bbs[bbs[succ]->name].get();
+        ir_bb->succ.push_back(ir_bb_succ);
+        ir_bb_succ->pred.push_back(ir_bb);
+      }
+    }
   }
 
  private:
@@ -375,16 +412,13 @@ struct AddInstruction : Instruction {
   ~AddInstruction() override = default;
 };
 
-struct JmpInstruction : Instruction {
+struct JmpInstruction : FlowChangingInstruction {
   using JmpInstructionPtr = std::unique_ptr<JmpInstruction>;
 
-  BasicBlock *bb;
-  std::string bb_name;
+  JmpInstruction(BasicBlock *bb_, std::string to_label_)
+      : FlowChangingInstruction(bb_, std::move(to_label_)) {}
 
-  JmpInstruction(BasicBlock *bb_, std::string bb_name_)
-      : bb(bb_), bb_name(std::move(bb_name_)) {}
-
-  void translateToIR(llvm::Module &, llvm::IRBuilder<> &builder) override {
+  void translateToIR(llvm::Module &, llvm::IRBuilder<> &builder, Module& m) override {
     builder.CreateBr(bb->llvm_bb);
   }
 
@@ -399,134 +433,6 @@ struct JmpInstruction : Instruction {
 
   ~JmpInstruction() override = default;
 };
-
-/* struct MulInstruction : Instruction {
-  using MulInstructionPtr = std::unique_ptr<MulInstruction>;
-
-  Bits_t bits;
-  RegValue res_reg;
-  RegValue arg1_reg;
-  Value arg2;
-
-  MulInstruction(Bits_t bits_, RegValue res, RegValue arg1, Value arg2_)
-      : bits(bits_), res_reg(res), arg1_reg(arg1), arg2(arg2_) {}
-
-  static MulInstructionPtr parse(std::string_view &in) {
-    in = removeSpaces(in);
-    auto bits_sv = consumeUntilWhitespace(in);
-    in = removeSpaces(in);
-    auto res = consumeUntilWhitespace(in);
-    in = removeSpaces(in);
-    auto arg1 = consumeUntilWhitespace(in);
-    in = removeSpaces(in);
-    auto arg2 = consumeUntilWhitespace(in);
-    auto bits = parseNumber<Bits_t>(bits_sv);
-    return std::make_unique<MulInstruction>(
-        bits,
-        RegValue{parseNumber<RegId_t>(res)},
-        RegValue{parseNumber<RegId_t>(arg1)},
-        parseNumberOrRegValue(arg2, bits));
-  }
-
-  void translateToIR(llvm::Module &module, llvm::IRBuilder<> &builder, Function &) override {
-    auto *regs = module.getGlobalVariable(kRegFileName);
-    auto *arg1_ir = builder.CreateConstGEP2_32(regs->getValueType(), regs, 0, arg1_reg.reg_id);
-    auto *arg2_ir = std::visit(boost::hana::overload(
-                                   [&](ImmValue v) {
-                                     // TODO: think about different int types
-                                     return static_cast<llvm::Value *>(builder.getInt32(v.value));
-                                   },
-                                   [&](RegValue v) {
-                                     return builder.CreateConstGEP2_32(regs->getValueType(), regs, 0, v.reg_id);
-                                   }),
-                               arg2);
-    auto *res_ir = builder.CreateConstGEP2_32(regs->getValueType(), regs, 0, res_reg.reg_id);
-    builder.CreateStore(builder.CreateMul(arg1_ir, arg2_ir), res_ir);
-  }
-
-  ~MulInstruction() override = default;
-};
-
-struct MovInstruction : Instruction {
-  using MovInstructionPtr = std::unique_ptr<MovInstruction>;
-
-  Bits_t bits;
-  RegValue res_reg;
-  Value arg1;
-
-  MovInstruction(Bits_t bits_, RegValue res, Value arg1_)
-      : bits(bits_), res_reg(res), arg1(arg1_) {}
-
-  static MovInstructionPtr parse(std::string_view &in) {
-    in = removeSpaces(in);
-    auto bits_sv = consumeUntilWhitespace(in);
-    in = removeSpaces(in);
-    auto res = consumeUntilWhitespace(in);
-    in = removeSpaces(in);
-    auto arg1 = consumeUntilWhitespace(in);
-    auto bits = parseNumber<Bits_t>(bits_sv);
-    return std::make_unique<MovInstruction>(
-        bits,
-        RegValue{parseNumber<RegId_t>(res)},
-        parseNumberOrRegValue(arg1, bits));
-  }
-
-  void translateToIR(llvm::Module &module, llvm::IRBuilder<> &builder, Function &) override {
-    auto *regs = module.getGlobalVariable(kRegFileName);
-    auto *arg1_ir = std::visit(boost::hana::overload(
-                                   [&](ImmValue v) {
-                                     // TODO: think about different int types
-                                     return static_cast<llvm::Value *>(builder.getInt32(v.value));
-                                   },
-                                   [&](RegValue v) {
-                                     return builder.CreateConstGEP2_32(regs->getValueType(), regs, 0, v.reg_id);
-                                   }),
-                               arg1);
-    auto *res_ir = builder.CreateConstGEP2_32(regs->getValueType(), regs, 0, res_reg.reg_id);
-    builder.CreateStore(arg1_ir, res_ir);
-  }
-
-  ~MovInstruction() override = default;
-};
-
-struct RetInstruction : Instruction {
-  using RetInstructionPtr = std::unique_ptr<RetInstruction>;
-
-  Bits_t bits;
-  Value arg1;
-
-  RetInstruction(Bits_t bits_, Value arg1_)
-      : bits(bits_), arg1(arg1_) {}
-
-  static RetInstructionPtr parse(std::string_view &in) {
-    in = removeSpaces(in);
-    auto bits_sv = consumeUntilWhitespace(in);
-    in = removeSpaces(in);
-    auto res = consumeUntilWhitespace(in);
-    in = removeSpaces(in);
-    auto arg1 = consumeUntilWhitespace(in);
-    auto bits = parseNumber<Bits_t>(bits_sv);
-    return std::make_unique<RetInstruction>(
-        bits,
-        parseNumberOrRegValue(arg1, bits));
-  }
-
-  void translateToIR(llvm::Module &module, llvm::IRBuilder<> &builder, Function &) override {
-    auto *regs = module.getGlobalVariable(kRegFileName);
-    auto *arg1_ir = std::visit(boost::hana::overload(
-                                   [&](ImmValue v) {
-                                     // TODO: think about different int types
-                                     return static_cast<llvm::Value *>(builder.getInt32(v.value));
-                                   },
-                                   [&](RegValue v) {
-                                     return builder.CreateConstGEP2_32(regs->getValueType(), regs, 0, v.reg_id);
-                                   }),
-                               arg1);
-    builder.CreateRet(arg1_ir);
-  }
-
-  ~RetInstruction() override = default;
-}; */
 
 BasicBlock::BasicBlockPtr BasicBlock::parse(std::string_view &in) {
   auto bb = std::make_unique<BasicBlock>();
